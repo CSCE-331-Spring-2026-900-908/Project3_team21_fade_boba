@@ -1,0 +1,15 @@
+TO CREATE THE DATABASE CONNECTION:
+
+1. Create a credentials.env file
+2. Populate it as follows:
+
+DB_HOST=[HOST]
+DB_PORT=[DATABASE_PORT]
+DB_NAME=[DATABASE_NAME]
+DB_USER=[USERNAME]
+DB_PASSWORD=[PASSWORD]
+
+PORT=3001           ** This port value is the actual one, it is fine as it is a standard / common port
+
+3. Fill in the real values, remove placeholders.
+4. MAKE SURE .ENV IS NEVER COMMITTED TO GITHUB
