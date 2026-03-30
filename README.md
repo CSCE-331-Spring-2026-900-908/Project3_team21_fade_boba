@@ -13,3 +13,6 @@ PORT=3001           ** This port value is the actual one, it is fine as it is a 
 
 3. Fill in the real values, remove placeholders.
 4. MAKE SURE .ENV IS NEVER COMMITTED TO GITHUB
+
+
+Link: https://project3-team21-fade-boba-1.onrender.com/
