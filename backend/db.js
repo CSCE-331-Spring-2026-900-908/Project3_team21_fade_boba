@@ -1,0 +1,16 @@
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  host:     process.env.DB_HOST,
+  port:     process.env.DB_PORT,      // get credentials from the env file
+  database: process.env.DB_NAME,
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  ssl: { rejectUnauthorized: false }, 
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err); // post error (any error, i didnt make it specific)
+});
+
+module.exports = pool;
