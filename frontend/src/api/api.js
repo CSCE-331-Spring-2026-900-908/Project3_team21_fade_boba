@@ -1,7 +1,7 @@
 // src/api/api.js
 // All backend calls go through here - easy to update the base URL
 
-const BASE = '/api';
+const BASE = 'https://project3-team21-fade-boba-1.onrender.com/api';
 
 export async function fetchDrinks() {
   const res = await fetch(`${BASE}/menu/drinks`);
