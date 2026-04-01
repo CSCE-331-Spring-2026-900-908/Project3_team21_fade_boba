@@ -1,9 +1,29 @@
 // src/pages/CustomerKiosk.js
-// Self-service kiosk - no login needed, uses employee_id=1 (or a dedicated kiosk employee)
 import React, { useState, useEffect } from 'react';
 import { fetchDrinks, fetchAddons, placeOrder } from '../api/api';
 
-const KIOSK_EMPLOYEE_ID = 1; // Default kiosk employee - update as needed
+const KIOSK_EMPLOYEE_ID = 1;
+
+// Open-Meteo -College Station, TX based location.
+const WEATHER_URL =
+  'https://api.open-meteo.com/v1/forecast?latitude=30.628&longitude=-96.3344&current_weather=true&temperature_unit=fahrenheit';
+
+function getWeatherEmoji(code) {
+  if (code === 0) return '☀️';
+  if (code <= 2) return '⛅';
+  if (code <= 48) return '🌫️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌦️';
+  return '⛈️';
+}
+
+function getDrinkSuggestion(tempF) {
+  if (tempF >= 85) return 'Hot outside! Cool down with a Strawberry Slush or Taro Slush 🧊';
+  if (tempF >= 70) return 'Nice weather! Try our Brown Sugar Boba or Matcha Latte 🧋';
+  if (tempF >= 55) return 'A little cool — our Thai Milk Tea or Coffee Milk Tea will warm you up ☕';
+  return 'Cold out there! Our Hot Matcha Latte or Classic Milk Tea is perfect 🍵';
+}
 
 export default function CustomerKiosk() {
   const [drinks,  setDrinks]  = useState([]);
@@ -11,12 +31,22 @@ export default function CustomerKiosk() {
   const [cart,    setCart]    = useState([]);
   const [modal,   setModal]   = useState(null);
   const [selectedAddons, setSelectedAddons] = useState([]);
-  const [screen,  setScreen]  = useState('menu'); // 'menu' | 'cart' | 'confirm'
+  const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm'
   const [orderId, setOrderId] = useState(null);
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
-    fetchDrinks().then(setDrinks);
-    fetchAddons().then(setAddons);
+    fetchDrinks().then((data) => setDrinks(Array.isArray(data) ? data : []));
+    fetchAddons().then((data) => setAddons(Array.isArray(data) ? data : []));
+
+    // Fetch weather from Open-Meteo
+    fetch(WEATHER_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        const { temperature, weathercode, windspeed } = data.current_weather;
+        setWeather({ temp: Math.round(temperature), code: weathercode, wind: Math.round(windspeed) });
+      })
+      .catch(() => setWeather(null));
   }, []);
 
   const openDrink = (drink) => { setModal(drink); setSelectedAddons([]); };
@@ -70,10 +100,29 @@ export default function CustomerKiosk() {
       {/* Header */}
       <div style={styles.header}>
         <h1 style={styles.logo}>🧋 Fade Boba</h1>
+
+        {/* Weather widget */}
+        {weather && (
+          <div style={styles.weatherBox}>
+            <span style={{ fontSize: '28px' }}>{getWeatherEmoji(weather.code)}</span>
+            <div style={styles.weatherText}>
+              <span style={styles.weatherTemp}>{weather.temp}°F</span>
+              <span style={styles.weatherWind}>💨 {weather.wind} mph</span>
+            </div>
+          </div>
+        )}
+
         <button style={styles.cartToggle} onClick={() => setScreen(screen === 'cart' ? 'menu' : 'cart')}>
           🛒 Cart ({cart.length})
         </button>
       </div>
+
+      {/* Weather suggestion banner */}
+      {weather && screen === 'menu' && (
+        <div style={styles.suggestionBanner}>
+          {getDrinkSuggestion(weather.temp)}
+        </div>
+      )}
 
       {/* Menu */}
       {screen === 'menu' && (
@@ -155,24 +204,29 @@ export default function CustomerKiosk() {
 }
 
 const styles = {
-  layout:       { minHeight: '100vh', background: 'var(--dark)', display: 'flex', flexDirection: 'column' },
-  header:       { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 32px', background: 'var(--dark-card)', borderBottom: '1px solid var(--border)' },
-  logo:         { fontSize: '28px', fontWeight: 800, color: 'var(--pink)' },
-  cartToggle:   { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '12px', padding: '14px 24px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' },
-  menuGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', padding: '32px' },
-  drinkCard:    { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', minHeight: '160px' },
-  drinkEmoji:   { fontSize: '40px' },
-  drinkName:    { fontWeight: 700, fontSize: '16px', textAlign: 'center' },
-  drinkPrice:   { color: 'var(--pink)', fontWeight: 800, fontSize: '20px' },
-  cartView:     { padding: '32px', maxWidth: '700px', margin: '0 auto', width: '100%' },
-  cartRow:      { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  removeBtn:    { background: 'var(--red)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontWeight: 600, cursor: 'pointer' },
-  totalRow:     { display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderTop: '1px solid var(--border)', marginBottom: '16px' },
-  bigBtn:       { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '12px', padding: '18px', fontSize: '18px', fontWeight: 700, cursor: 'pointer', width: '100%' },
-  confirmScreen:{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)' },
-  confirmBox:   { textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' },
-  overlay:      { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
-  modalBox:     { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '36px', width: '480px' },
-  addonGrid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
-  addonBtn:     { border: 'none', borderRadius: '10px', padding: '14px', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' },
+  layout:           { minHeight: '100vh', background: 'var(--dark)', display: 'flex', flexDirection: 'column' },
+  header:           { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 32px', background: 'var(--dark-card)', borderBottom: '1px solid var(--border)' },
+  logo:             { fontSize: '28px', fontWeight: 800, color: 'var(--pink)' },
+  weatherBox:       { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--dark)', border: '1px solid var(--border)', borderRadius: '12px', padding: '10px 16px' },
+  weatherText:      { display: 'flex', flexDirection: 'column' },
+  weatherTemp:      { fontWeight: 800, fontSize: '20px', color: 'var(--text)' },
+  weatherWind:      { fontSize: '12px', color: 'var(--text-muted)' },
+  suggestionBanner: { background: 'var(--purple)', color: 'white', padding: '12px 32px', fontSize: '16px', fontWeight: 600, textAlign: 'center' },
+  cartToggle:       { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '12px', padding: '14px 24px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' },
+  menuGrid:         { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', padding: '32px' },
+  drinkCard:        { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', minHeight: '160px' },
+  drinkEmoji:       { fontSize: '40px' },
+  drinkName:        { fontWeight: 700, fontSize: '16px', textAlign: 'center' },
+  drinkPrice:       { color: 'var(--pink)', fontWeight: 800, fontSize: '20px' },
+  cartView:         { padding: '32px', maxWidth: '700px', margin: '0 auto', width: '100%' },
+  cartRow:          { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  removeBtn:        { background: 'var(--red)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 14px', fontWeight: 600, cursor: 'pointer' },
+  totalRow:         { display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderTop: '1px solid var(--border)', marginBottom: '16px' },
+  bigBtn:           { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '12px', padding: '18px', fontSize: '18px', fontWeight: 700, cursor: 'pointer', width: '100%' },
+  confirmScreen:    { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)' },
+  confirmBox:       { textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' },
+  overlay:          { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
+  modalBox:         { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '36px', width: '480px' },
+  addonGrid:        { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  addonBtn:         { border: 'none', borderRadius: '10px', padding: '14px', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' },
 };
