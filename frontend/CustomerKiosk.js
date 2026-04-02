@@ -80,7 +80,7 @@ export default function CustomerKiosk() {
         <div style={styles.menuGrid}>
           {drinks.map((d) => (
             <button key={d.menu_item_id} style={styles.drinkCard} onClick={() => openDrink(d)}>
-              <span style={styles.drinkEmoji}>🧋</span>
+              <img src={`/images/${d.item_name.toLowerCase().replace(/ /g, '-')}.jpg`} alt={d.item_name} style={styles.drinkImg} onError={(e) => { e.target.style.display = 'none' }}/>
               <span style={styles.drinkName}>{d.item_name}</span>
               <span style={styles.drinkPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
             </button>
@@ -175,4 +175,5 @@ const styles = {
   modalBox:     { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '36px', width: '480px' },
   addonGrid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
   addonBtn:     { border: 'none', borderRadius: '10px', padding: '14px', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' },
+  drinkImg:     { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' },
 };
