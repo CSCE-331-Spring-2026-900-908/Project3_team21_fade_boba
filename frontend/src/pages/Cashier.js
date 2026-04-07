@@ -12,6 +12,8 @@ export default function Cashier() {
   const [cart,    setCart]    = useState([]);
   const [modal,   setModal]   = useState(null);   // drink being customized
   const [selectedAddons, setSelectedAddons] = useState([]);
+  const [iceLevel, setIceLevel] = useState('100%');
+  const [sugarLevel, setSugarLevel] = useState('100%');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -26,6 +28,8 @@ export default function Cashier() {
   const openCustomize = (drink) => {
     setModal(drink);
     setSelectedAddons([]);
+    setIceLevel('100%');
+    setSugarLevel('100%');
   };
 
   const toggleAddon = (addon) => {
@@ -42,6 +46,8 @@ export default function Cashier() {
       ...modal,
       sale_price: parseFloat(modal.base_price) + addonTotal,
       addons: selectedAddons,
+      ice: iceLevel,
+      sugar: sugarLevel
     }]);
     setModal(null);
   };
@@ -57,6 +63,8 @@ export default function Cashier() {
         menu_item_id: item.menu_item_id,
         sale_price: item.sale_price,
         quantity: 1,
+        ice: item.ice,
+        sugar: item.sugar,
         addons: item.addons.map((a) => ({ add_on_menu_item_id: a.menu_item_id, quantity: 1 })),
       }));
       const res = await placeOrder(employee.employee_id, items);
@@ -94,6 +102,7 @@ export default function Cashier() {
             <div key={i} style={styles.cartItem}>
               <div>
                 <div style={{ fontWeight: 600 }}>{item.item_name}</div>
+                <div style={styles.addonLine}>Ice: {item.ice} | Sugar: {item.sugar}</div>
                 {item.addons.map((a) => (
                   <div key={a.menu_item_id} style={styles.addonLine}>+ {a.item_name}</div>
                 ))}
@@ -126,7 +135,21 @@ export default function Cashier() {
             <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
               Base: ${parseFloat(modal.base_price).toFixed(2)}
             </p>
-            <p style={{ fontWeight: 600, marginBottom: '10px' }}>Add-ons:</p>
+            <p style={{ fontWeight: 600, marginBottom: '6px' }}>Ice Level:</p>
+            <div style={styles.levelGroup}>
+              {['0%', '50%', '100%'].map(lvl => (
+                <button key={'ice'+lvl} style={{...styles.levelBtn, background: iceLevel === lvl ? 'var(--blue)' : 'var(--border)'}} onClick={() => setIceLevel(lvl)}>{lvl}</button>
+              ))}
+            </div>
+
+            <p style={{ fontWeight: 600, marginBottom: '6px', marginTop: '10px' }}>Sugar Level:</p>
+            <div style={styles.levelGroup}>
+              {['0%', '50%', '100%'].map(lvl => (
+                <button key={'sug'+lvl} style={{...styles.levelBtn, background: sugarLevel === lvl ? 'var(--pink)' : 'var(--border)'}} onClick={() => setSugarLevel(lvl)}>{lvl}</button>
+              ))}
+            </div>
+
+            <p style={{ fontWeight: 600, marginBottom: '10px', marginTop: '10px' }}>Add-ons:</p>
             <div style={styles.addonList}>
               {addons.map((a) => {
                 const selected = !!selectedAddons.find((s) => s.menu_item_id === a.menu_item_id);
@@ -172,6 +195,8 @@ const styles = {
   checkoutBtn: { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px', fontWeight: 700, fontSize: '16px', cursor: 'pointer', width: '100%' },
   overlay:     { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
   modalBox:    { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', width: '380px' },
-  addonList:   { display: 'flex', flexDirection: 'column', gap: '8px' },
+  levelGroup:  { display: 'flex', gap: '8px' },
+  levelBtn:    { flex: 1, border: 'none', borderRadius: '8px', padding: '8px', color: 'white', cursor: 'pointer', fontWeight: 600 },
+  addonList:   { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' },
   addonBtn:    { border: 'none', borderRadius: '8px', padding: '10px 14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: 600 },
 };

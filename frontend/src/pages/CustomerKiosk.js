@@ -31,6 +31,8 @@ export default function CustomerKiosk() {
   const [cart,    setCart]    = useState([]);
   const [modal,   setModal]   = useState(null);
   const [selectedAddons, setSelectedAddons] = useState([]);
+  const [iceLevel, setIceLevel] = useState('100%');
+  const [sugarLevel, setSugarLevel] = useState('100%');
   const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm'
   const [orderId, setOrderId] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -49,7 +51,12 @@ export default function CustomerKiosk() {
       .catch(() => setWeather(null));
   }, []);
 
-  const openDrink = (drink) => { setModal(drink); setSelectedAddons([]); };
+  const openDrink = (drink) => { 
+    setModal(drink); 
+    setSelectedAddons([]); 
+    setIceLevel('100%');
+    setSugarLevel('100%');
+  };
 
   const toggleAddon = (addon) => {
     setSelectedAddons((prev) =>
@@ -61,7 +68,13 @@ export default function CustomerKiosk() {
 
   const addToCart = () => {
     const addonTotal = selectedAddons.reduce((s, a) => s + parseFloat(a.base_price), 0);
-    setCart((prev) => [...prev, { ...modal, sale_price: parseFloat(modal.base_price) + addonTotal, addons: selectedAddons }]);
+    setCart((prev) => [...prev, { 
+      ...modal, 
+      sale_price: parseFloat(modal.base_price) + addonTotal, 
+      addons: selectedAddons,
+      ice: iceLevel,
+      sugar: sugarLevel 
+    }]);
     setModal(null);
   };
 
@@ -72,6 +85,8 @@ export default function CustomerKiosk() {
       menu_item_id: item.menu_item_id,
       sale_price: item.sale_price,
       quantity: 1,
+      ice: item.ice,
+      sugar: item.sugar,
       addons: item.addons.map((a) => ({ add_on_menu_item_id: a.menu_item_id, quantity: 1 })),
     }));
     const res = await placeOrder(KIOSK_EMPLOYEE_ID, items);
@@ -146,6 +161,7 @@ export default function CustomerKiosk() {
             <div key={i} style={styles.cartRow}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '18px' }}>{item.item_name}</div>
+                <div style={{ color: 'var(--text-muted)' }}>Ice: {item.ice} | Sugar: {item.sugar}</div>
                 {item.addons.map((a) => <div key={a.menu_item_id} style={{ color: 'var(--text-muted)' }}>+ {a.item_name}</div>)}
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -177,7 +193,21 @@ export default function CustomerKiosk() {
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px', fontSize: '18px' }}>
               ${parseFloat(modal.base_price).toFixed(2)}
             </p>
-            <p style={{ fontWeight: 700, marginBottom: '12px', fontSize: '18px' }}>Customize your drink:</p>
+            <p style={{ fontWeight: 700, marginBottom: '6px', fontSize: '16px' }}>Ice Level:</p>
+            <div style={styles.levelGroup}>
+              {['0%', '50%', '100%'].map(lvl => (
+                <button key={'ice'+lvl} style={{...styles.levelBtn, background: iceLevel === lvl ? 'var(--blue)' : 'var(--border)'}} onClick={() => setIceLevel(lvl)}>{lvl}</button>
+              ))}
+            </div>
+
+            <p style={{ fontWeight: 700, marginBottom: '6px', marginTop: '16px', fontSize: '16px' }}>Sugar Level:</p>
+            <div style={styles.levelGroup}>
+              {['0%', '50%', '100%'].map(lvl => (
+                <button key={'sug'+lvl} style={{...styles.levelBtn, background: sugarLevel === lvl ? 'var(--pink)' : 'var(--border)'}} onClick={() => setSugarLevel(lvl)}>{lvl}</button>
+              ))}
+            </div>
+
+            <p style={{ fontWeight: 700, marginBottom: '12px', marginTop: '16px', fontSize: '16px' }}>Add-ons:</p>
             <div style={styles.addonGrid}>
               {addons.map((a) => {
                 const sel = !!selectedAddons.find((s) => s.menu_item_id === a.menu_item_id);
@@ -227,6 +257,8 @@ const styles = {
   confirmBox:       { textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' },
   overlay:          { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
   modalBox:         { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '36px', width: '480px' },
-  addonGrid:        { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  levelGroup:       { display: 'flex', gap: '10px' },
+  levelBtn:         { flex: 1, border: 'none', borderRadius: '10px', padding: '12px', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '16px' },
+  addonGrid:        { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', maxHeight: '180px', overflowY: 'auto' },
   addonBtn:         { border: 'none', borderRadius: '10px', padding: '14px', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' },
 };
