@@ -33,9 +33,16 @@ export default function CustomerKiosk() {
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [iceLevel, setIceLevel] = useState('100%');
   const [sugarLevel, setSugarLevel] = useState('100%');
-  const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm'
+  const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm' | 'history'
   const [orderId, setOrderId] = useState(null);
   const [weather, setWeather] = useState(null);
+
+  // Favorites and History via LocalStorage
+  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('boba_favorites') || '[]'));
+  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('boba_history') || '[]'));
+
+  useEffect(() => { localStorage.setItem('boba_favorites', JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => { localStorage.setItem('boba_history', JSON.stringify(history)); }, [history]);
 
   useEffect(() => {
     fetchDrinks().then((data) => setDrinks(Array.isArray(data) ? data : []));
@@ -66,6 +73,11 @@ export default function CustomerKiosk() {
     );
   };
 
+  const toggleFavorite = (e, drinkId) => {
+    e.stopPropagation();
+    setFavorites((prev) => prev.includes(drinkId) ? prev.filter((id) => id !== drinkId) : [...prev, drinkId]);
+  };
+
   const addToCart = () => {
     const addonTotal = selectedAddons.reduce((s, a) => s + parseFloat(a.base_price), 0);
     setCart((prev) => [...prev, { 
@@ -91,6 +103,16 @@ export default function CustomerKiosk() {
     }));
     const res = await placeOrder(KIOSK_EMPLOYEE_ID, items);
     setOrderId(res.order_id);
+
+    // Save to order history
+    const pastOrder = {
+      orderId: res.order_id,
+      date: new Date().toLocaleString(),
+      items: [...cart],
+      total: total
+    };
+    setHistory((prev) => [pastOrder, ...prev].slice(0, 10)); // Keep latest 10 orders
+
     setCart([]);
     setScreen('confirm');
   };
@@ -127,9 +149,12 @@ export default function CustomerKiosk() {
           </div>
         )}
 
-        <button style={styles.cartToggle} onClick={() => setScreen(screen === 'cart' ? 'menu' : 'cart')}>
-          🛒 Cart ({cart.length})
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button style={styles.navToggle} onClick={() => setScreen('history')}>📜 History</button>
+          <button style={styles.cartToggle} onClick={() => setScreen(screen === 'cart' ? 'menu' : 'cart')}>
+            🛒 Cart ({cart.length})
+          </button>
+        </div>
       </div>
 
       {/* Weather suggestion banner */}
@@ -139,16 +164,71 @@ export default function CustomerKiosk() {
         </div>
       )}
 
-      {/* Menu */}
+      {/* Menu & Favorites */}
       {screen === 'menu' && (
-        <div style={styles.menuGrid}>
-          {drinks.map((d) => (
-            <button key={d.menu_item_id} style={styles.drinkCard} onClick={() => openDrink(d)}>
-              <span style={styles.drinkEmoji}>🧋</span>
-              <span style={styles.drinkName}>{d.item_name}</span>
-              <span style={styles.drinkPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
-            </button>
+        <div style={styles.menuContainer}>
+          {favorites.length > 0 && (
+            <>
+              <h2 style={styles.sectionTitle}>⭐ Your Favorites</h2>
+              <div style={styles.menuGrid}>
+                {drinks.filter(d => favorites.includes(d.menu_item_id)).map((d) => (
+                  <button key={'fav'+d.menu_item_id} style={styles.drinkCard} onClick={() => openDrink(d)}>
+                    <div style={styles.favBtn} onClick={(e) => toggleFavorite(e, d.menu_item_id)}>❤️</div>
+                    <span style={styles.drinkEmoji}>🧋</span>
+                    <span style={styles.drinkName}>{d.item_name}</span>
+                    <span style={styles.drinkPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+              <h2 style={styles.sectionTitle}>Full Menu</h2>
+            </>
+          )}
+
+          <div style={styles.menuGrid}>
+            {drinks.map((d) => (
+              <button key={d.menu_item_id} style={styles.drinkCard} onClick={() => openDrink(d)}>
+                <div style={styles.favBtn} onClick={(e) => toggleFavorite(e, d.menu_item_id)}>
+                  {favorites.includes(d.menu_item_id) ? '❤️' : '🤍'}
+                </div>
+                <span style={styles.drinkEmoji}>🧋</span>
+                <span style={styles.drinkName}>{d.item_name}</span>
+                <span style={styles.drinkPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Order History */}
+      {screen === 'history' && (
+        <div style={styles.cartView}>
+          <h2 style={{ marginBottom: '20px' }}>Your Recent Orders</h2>
+          {history.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No previous orders found.</p>}
+          {history.map((order, i) => (
+            <div key={i} style={{...styles.cartRow, flexDirection: 'column', alignItems: 'flex-start'}}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 700, fontSize: '18px' }}>Order #{order.orderId}</span>
+                <span style={{ color: 'var(--text-muted)' }}>{order.date}</span>
+              </div>
+              {order.items.map((item, j) => (
+                <div key={j} style={{ paddingLeft: '10px', borderLeft: '2px solid var(--border)', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 600 }}>{item.item_name} <span style={{ color: 'var(--pink)' }}>${parseFloat(item.sale_price).toFixed(2)}</span></div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Ice: {item.ice} | Sugar: {item.sugar}</div>
+                  {item.addons.map(a => <div key={a.menu_item_id} style={{ fontSize: '12px', color: 'var(--text-muted)' }}>+ {a.item_name}</div>)}
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '10px', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+                <span style={{ fontWeight: 700 }}>Total: ${parseFloat(order.total).toFixed(2)}</span>
+                <button style={{...styles.removeBtn, background: 'var(--purple)'}} onClick={() => {
+                  order.items.forEach(item => setCart(prev => [...prev, item]));
+                  setScreen('cart');
+                }}>Reorder All Items</button>
+              </div>
+            </div>
           ))}
+          <button style={{ ...styles.bigBtn, background: 'var(--border)', marginTop: '24px' }} onClick={() => setScreen('menu')}>
+            ← Back to Menu
+          </button>
         </div>
       )}
 
@@ -243,8 +323,12 @@ const styles = {
   weatherWind:      { fontSize: '12px', color: 'var(--text-muted)' },
   suggestionBanner: { background: 'var(--purple)', color: 'white', padding: '12px 32px', fontSize: '16px', fontWeight: 600, textAlign: 'center' },
   cartToggle:       { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '12px', padding: '14px 24px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' },
-  menuGrid:         { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', padding: '32px' },
-  drinkCard:        { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', minHeight: '160px' },
+  navToggle:        { background: 'var(--dark-card)', border: '1px solid var(--border)', color: 'white', borderRadius: '12px', padding: '14px 24px', fontSize: '18px', fontWeight: 700, cursor: 'pointer' },
+  menuContainer:    { padding: '32px' },
+  sectionTitle:     { marginBottom: '20px', color: 'var(--text)', fontSize: '24px' },
+  menuGrid:         { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' },
+  drinkCard:        { position: 'relative', background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer', minHeight: '160px' },
+  favBtn:           { position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' },
   drinkEmoji:       { fontSize: '40px' },
   drinkName:        { fontWeight: 700, fontSize: '16px', textAlign: 'center' },
   drinkPrice:       { color: 'var(--pink)', fontWeight: 800, fontSize: '20px' },
