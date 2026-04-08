@@ -1,6 +1,7 @@
 // src/pages/CustomerKiosk.js
 import React, { useState, useEffect } from 'react';
 import { fetchDrinks, fetchAddons, placeOrder } from '../api/api';
+import { useNavigate } from 'react-router-dom';
 
 const KIOSK_EMPLOYEE_ID = 1;
 
@@ -36,6 +37,7 @@ export default function CustomerKiosk() {
   const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm' | 'history'
   const [orderId, setOrderId] = useState(null);
   const [weather, setWeather] = useState(null);
+  const navigate = useNavigate();
 
   // Favorites and History via LocalStorage
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('boba_favorites') || '[]'));
@@ -136,6 +138,13 @@ export default function CustomerKiosk() {
     <div style={styles.layout}>
       {/* Header */}
       <div style={styles.header}>
+      {/* 🔙 Back Button */}
+      <button 
+        style={styles.backBtn}
+        onClick={() => navigate('/')}
+      >
+        ← Home
+      </button>
         <h1 style={styles.logo}>🧋 Fade Boba</h1>
 
         {/* Weather widget */}
@@ -345,4 +354,5 @@ const styles = {
   levelBtn:         { flex: 1, border: 'none', borderRadius: '10px', padding: '12px', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '16px' },
   addonGrid:        { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', maxHeight: '180px', overflowY: 'auto' },
   addonBtn:         { border: 'none', borderRadius: '10px', padding: '14px', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '14px' },
+  backBtn:          { background: 'var(--dark)', border: '1px solid var(--border)', color: 'white', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer'},
 };
