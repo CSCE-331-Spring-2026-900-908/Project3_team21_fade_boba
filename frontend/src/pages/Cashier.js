@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchDrinks, fetchAddons, placeOrder } from '../api/api';
+import ReceiptModal from '../components/ReceiptModal';
 
 export default function Cashier() {
   const navigate  = useNavigate();
@@ -15,6 +16,8 @@ export default function Cashier() {
   const [iceLevel, setIceLevel] = useState('100%');
   const [sugarLevel, setSugarLevel] = useState('100%');
   const [message, setMessage] = useState('');
+  const [receiptData, setReceiptData] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
     if (!employee || employee.role !== 'Cashier') {
@@ -69,6 +72,13 @@ export default function Cashier() {
       }));
       const res = await placeOrder(employee.employee_id, items);
       setMessage(`✅ Order #${res.order_id} placed!`);
+      setReceiptData({
+        orderId: res.order_id,
+        items: [...cart],
+        total: total,
+        date: new Date().toLocaleString()
+      });
+      setShowReceiptModal(true);
       setCart([]);
     } catch {
       setMessage('❌ Order failed. Please try again.');
@@ -125,6 +135,12 @@ export default function Cashier() {
         <button style={styles.checkoutBtn} onClick={checkout} disabled={cart.length === 0}>
           Checkout
         </button>
+        
+        {receiptData && (
+          <button style={{ ...styles.checkoutBtn, background: 'var(--blue)', marginTop: '8px' }} onClick={() => setShowReceiptModal(true)}>
+            📄 View Last Receipt
+          </button>
+        )}
       </div>
 
       {/* Customize Modal */}
@@ -170,6 +186,11 @@ export default function Cashier() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Receipt Modal */}
+      {showReceiptModal && receiptData && (
+        <ReceiptModal order={receiptData} onClose={() => setShowReceiptModal(false)} />
       )}
     </div>
   );

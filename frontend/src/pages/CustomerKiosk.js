@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDrinks, fetchAddons, placeOrder } from '../api/api';
 import { useNavigate } from 'react-router-dom';
+import ReceiptModal from '../components/ReceiptModal';
 
 const KIOSK_EMPLOYEE_ID = 1;
 
@@ -36,6 +37,7 @@ export default function CustomerKiosk() {
   const [sugarLevel, setSugarLevel] = useState('100%');
   const [screen,  setScreen]  = useState('menu');// 'menu' | 'cart' | 'confirm' | 'history'
   const [orderId, setOrderId] = useState(null);
+  const [receiptData, setReceiptData] = useState(null);
   const [weather, setWeather] = useState(null);
   const navigate = useNavigate();
 
@@ -128,8 +130,15 @@ export default function CustomerKiosk() {
           <h1 style={{ fontSize: '32px', color: 'var(--green)' }}>Order Placed!</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '18px' }}>Order #{orderId}</p>
           <p style={{ color: 'var(--text-muted)' }}>Please wait for your name to be called.</p>
-          <button style={styles.bigBtn} onClick={() => setScreen('menu')}>Start New Order</button>
+          <button 
+            style={{ ...styles.bigBtn, background: 'var(--purple)', marginBottom: '12px', marginTop: '12px' }} 
+            onClick={() => setReceiptData({ orderId, items: history[0]?.items, total: history[0]?.total, date: history[0]?.date })}
+          >
+            📄 View Digital Receipt
+          </button>
+          <button style={{...styles.bigBtn, background: 'var(--border)'}} onClick={() => setScreen('menu')}>Start New Order</button>
         </div>
+        {receiptData && <ReceiptModal order={receiptData} onClose={() => setReceiptData(null)} />}
       </div>
     );
   }
