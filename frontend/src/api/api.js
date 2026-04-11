@@ -75,3 +75,19 @@ export async function updatePrice(menu_item_id, base_price) {
   });
   return res.json();
 }
+
+export const verifyGoogleToken = async (token) => {
+  try {
+    const response = await fetch('http://localhost:3001/api/auth/google', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error verifying token:", error);
+    throw error;
+  }
+};
