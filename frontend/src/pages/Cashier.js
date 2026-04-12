@@ -6,7 +6,7 @@ import ReceiptModal from '../components/ReceiptModal';
 
 export default function Cashier() {
   const navigate  = useNavigate();
-  const employee  = JSON.parse(sessionStorage.getItem('employee') || 'null');
+  const employee  = JSON.parse(sessionStorage.getItem('user') || 'null');
 
   const [drinks,  setDrinks]  = useState([]);
   const [addons,  setAddons]  = useState([]);
