@@ -78,7 +78,7 @@ export async function updatePrice(menu_item_id, base_price) {
 
 export const verifyGoogleToken = async (token) => {
   try {
-    const response = await fetch('http://localhost:3001/api/auth/google', {
+    const response = await fetch(`${BASE}/auth/google`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
