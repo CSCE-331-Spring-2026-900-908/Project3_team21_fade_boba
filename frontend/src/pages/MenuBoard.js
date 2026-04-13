@@ -1,9 +1,11 @@
 // src/pages/MenuBoard.js
 // Non-interactive large display - shows menu above the counter
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchDrinks } from '../api/api';
 
 export default function MenuBoard() {
+  const navigate = useNavigate();
   const [drinks, setDrinks] = useState([]);
   const [time,   setTime]   = useState(new Date());
 
@@ -18,6 +20,9 @@ export default function MenuBoard() {
     <div style={styles.bg}>
       {/* Header */}
       <div style={styles.header}>
+        <button style={styles.backBtn} onClick={() => navigate('/')} aria-label="Return to portal">
+          ← Home
+        </button>
         <div>
           <h1 style={styles.logo}>🧋 Fade Boba</h1>
           <p style={styles.tagline}>Premium Bubble Tea</p>
@@ -58,4 +63,5 @@ const styles = {
   itemName: { fontWeight: 700, fontSize: '16px', color: 'white' },
   itemPrice:{ fontWeight: 900, fontSize: '22px', color: '#F472B6' },
   footer:   { padding: '16px 48px', background: '#6B3FA0', textAlign: 'center', fontSize: '18px', fontWeight: 600 },
+  backBtn:  { background: '#1A0F2E', border: '1px solid #3D2B52', color: 'white', borderRadius: '10px', padding: '10px 16px', fontWeight: 600, cursor: 'pointer' },
 };
