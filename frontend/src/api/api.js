@@ -1,7 +1,7 @@
 // src/api/api.js
 // All backend calls go through here - easy to update the base URL
 
-const BASE = 'https://project3-team21-fade-boba.onrender.com/api';
+const BASE = 'http://localhost:3001/api'; // temporary for local testing
 
 export async function fetchDrinks() {
   const res = await fetch(`${BASE}/menu/drinks`);
@@ -76,6 +76,19 @@ export async function updatePrice(menu_item_id, base_price) {
   return res.json();
 }
 
+export async function translateTexts(texts, target) {
+  const res = await fetch(`${BASE}/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texts, target }),
+  });
+
+  if (!res.ok) return texts;
+
+  const data = await res.json();
+  return data.translations || texts;
+}
+
 export const verifyGoogleToken = async (token) => {
   try {
     const response = await fetch(`${BASE}/auth/google`, {
@@ -87,7 +100,7 @@ export const verifyGoogleToken = async (token) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error verifying token:", error);
+    console.error('Error verifying token:', error);
     throw error;
   }
 };
