@@ -1,6 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchLowStock, fetchOrders, fetchOrderSummary } from '../api/api';
+import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import {
+  getContrastAnnouncement,
+  getTextSizeAnnouncement,
+  readAccessibilitySettings,
+  updateAccessibilitySettings,
+} from '../utils/accessibility';
+
+function formatTime(value) {
+  return new Date(value).toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
 export default function Manager() {
   const navigate = useNavigate();
@@ -9,6 +23,9 @@ export default function Manager() {
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState('');
+  const [announcement, setAnnouncement] = useState('');
+  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
 
   const user = useMemo(() => {
     try {
@@ -18,15 +35,23 @@ export default function Manager() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!user || user.role !== 'Manager') {
-      navigate('/login');
-      return;
-    }
+  const updateAccessibility = (updates) => {
+    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
+    setAccessibility(next);
 
-    const loadData = async () => {
+    if (updates.contrast) {
+      setAnnouncement(getContrastAnnouncement(next.contrast));
+    }
+    if (updates.textSize) {
+      setAnnouncement(getTextSizeAnnouncement(next.textSize));
+    }
+  };
+
+  const loadData = useCallback(
+    async (announceRefresh = false) => {
       setLoading(true);
       setError('');
+
       try {
         const [summaryRows, orderRows, lowStockRows] = await Promise.all([
           fetchOrderSummary(),
@@ -37,16 +62,31 @@ export default function Manager() {
         setSummary(Array.isArray(summaryRows) ? summaryRows : []);
         setOrders(Array.isArray(orderRows) ? orderRows : []);
         setLowStock(Array.isArray(lowStockRows) ? lowStockRows : []);
+        const refreshedAt = new Date().toISOString();
+        setLastUpdated(refreshedAt);
+
+        if (announceRefresh) {
+          setAnnouncement(`Manager dashboard refreshed at ${formatTime(refreshedAt)}.`);
+        }
       } catch (loadError) {
         console.error(loadError);
         setError('Unable to load manager dashboard data right now.');
+        setAnnouncement('Manager dashboard refresh failed.');
       } finally {
         setLoading(false);
       }
-    };
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!user || user.role !== 'Manager') {
+      navigate('/login');
+      return;
+    }
 
     loadData();
-  }, [navigate, user]);
+  }, [loadData, navigate, user]);
 
   const totalRevenue = summary.reduce(
     (sum, day) => sum + parseFloat(day.revenue || 0),
@@ -63,7 +103,7 @@ export default function Manager() {
     navigate('/login');
   };
 
-  if (loading) {
+  if (loading && !lastUpdated) {
     return (
       <main style={styles.centered} id="main-content" aria-live="polite">
         <div style={styles.loadingCard}>
@@ -76,12 +116,24 @@ export default function Manager() {
 
   return (
     <main style={styles.page} id="main-content">
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+
       <header style={styles.header}>
         <div>
           <h1 style={styles.logo}>🧋 Fade Boba</h1>
           <p style={styles.subtitle}>Manager overview for {user?.first_name || 'Manager'}</p>
         </div>
+
         <div style={styles.headerActions}>
+          <button
+            style={styles.secondaryButton}
+            onClick={() => loadData(true)}
+            aria-describedby="manager-refresh-status"
+          >
+            Refresh Dashboard
+          </button>
           <button style={styles.secondaryButton} onClick={() => navigate('/')}>
             Portal
           </button>
@@ -91,11 +143,33 @@ export default function Manager() {
         </div>
       </header>
 
+      <p id="manager-refresh-status" style={styles.refreshStatus} aria-live="polite">
+        {loading
+          ? 'Refreshing dashboard data…'
+          : lastUpdated
+          ? `Last updated at ${formatTime(lastUpdated)}.`
+          : 'Dashboard has not been refreshed yet.'}
+      </p>
+
+      <AccessibilityToolbar
+        settings={accessibility}
+        onContrastChange={(value) => updateAccessibility({ contrast: value })}
+        onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
+      />
+
       {error && (
         <div style={styles.errorBanner} role="alert">
           {error}
         </div>
       )}
+
+      <section style={styles.helpBox} aria-label="Keyboard support">
+        <p style={styles.helpTitle}>Keyboard support</p>
+        <p style={styles.helpText}>
+          Use Tab to move through refresh, navigation, tables, and dashboard controls.
+          This view uses native buttons and labeled tables for keyboard and screen reader use.
+        </p>
+      </section>
 
       <section style={styles.metricsGrid} aria-label="Manager summary metrics">
         <div style={styles.metricCard}>
@@ -211,6 +285,9 @@ const styles = {
     padding: '24px',
     maxWidth: '1200px',
     margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
   },
   centered: {
     minHeight: '100vh',
@@ -237,7 +314,6 @@ const styles = {
     alignItems: 'flex-start',
     gap: '16px',
     flexWrap: 'wrap',
-    marginBottom: '24px',
   },
   headerActions: {
     display: 'flex',
@@ -245,13 +321,17 @@ const styles = {
     flexWrap: 'wrap',
   },
   logo: {
-    fontSize: '32px',
+    fontSize: '2rem',
     color: 'var(--pink)',
     fontWeight: 800,
   },
   subtitle: {
     marginTop: '6px',
     color: 'var(--text-muted)',
+  },
+  refreshStatus: {
+    color: 'var(--text-muted)',
+    fontSize: '0.95rem',
   },
   primaryButton: {
     background: 'var(--purple)',
@@ -261,19 +341,30 @@ const styles = {
     background: 'var(--border)',
     color: 'var(--text)',
   },
+  helpBox: {
+    background: 'var(--surface-muted)',
+    border: '1px solid var(--border)',
+    borderRadius: '12px',
+    padding: '14px 16px',
+  },
+  helpTitle: {
+    fontWeight: 700,
+    marginBottom: '4px',
+  },
+  helpText: {
+    color: 'var(--text-muted)',
+  },
   errorBanner: {
     background: 'rgba(248, 113, 113, 0.14)',
     border: '1px solid var(--red)',
     color: 'var(--text)',
     borderRadius: '12px',
     padding: '12px 16px',
-    marginBottom: '20px',
   },
   metricsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
     gap: '16px',
-    marginBottom: '24px',
   },
   metricCard: {
     background: 'var(--dark-card)',
@@ -285,13 +376,13 @@ const styles = {
     gap: '8px',
   },
   metricValue: {
-    fontSize: '28px',
+    fontSize: '1.9rem',
     fontWeight: 800,
     color: 'var(--pink)',
   },
   metricLabel: {
     color: 'var(--text-muted)',
-    fontSize: '13px',
+    fontSize: '0.82rem',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   },
@@ -307,7 +398,7 @@ const styles = {
     padding: '20px',
   },
   cardTitle: {
-    fontSize: '20px',
+    fontSize: '1.25rem',
     fontWeight: 700,
     marginBottom: '16px',
   },
@@ -331,14 +422,14 @@ const styles = {
     padding: '12px',
     border: '1px solid var(--border)',
     borderRadius: '12px',
-    background: 'rgba(255,255,255,0.02)',
+    background: 'var(--surface-muted)',
   },
   lowStockName: {
     fontWeight: 700,
   },
   lowStockMeta: {
     color: 'var(--text-muted)',
-    fontSize: '13px',
+    fontSize: '0.86rem',
     marginTop: '4px',
   },
 };

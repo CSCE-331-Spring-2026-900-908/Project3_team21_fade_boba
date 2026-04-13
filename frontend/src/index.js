@@ -4,6 +4,12 @@ import ReactDOM from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import App from './App';
+import {
+  applyAccessibilitySettings,
+  readAccessibilitySettings,
+} from './utils/accessibility';
+
+applyAccessibilitySettings(readAccessibilitySettings());
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

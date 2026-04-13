@@ -1,7 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAddons, fetchDrinks, placeOrder, translateTexts } from '../api/api';
 import ReceiptModal from '../components/ReceiptModal';
+import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import {
+  getContrastAnnouncement,
+  getTextSizeAnnouncement,
+  readAccessibilitySettings,
+  updateAccessibilitySettings,
+} from '../utils/accessibility';
 
 const KIOSK_EMPLOYEE_ID = 1;
 const WEATHER_URL =
@@ -45,6 +52,8 @@ const DEFAULT_TEXT = {
   warmSuggestion: 'Nice weather! Try our Brown Sugar Boba or Matcha Latte 🧋',
   coolSuggestion: 'A little cool — our Thai Milk Tea or Coffee Milk Tea will warm you up ☕',
   coldSuggestion: 'Cold out there! Our Hot Matcha Latte or Classic Milk Tea is perfect 🍵',
+  accessibilityHelp:
+    'Use the accessibility settings below for higher contrast or larger text. Use Tab to move between controls.',
 };
 
 function getWeatherEmoji(code) {
@@ -64,6 +73,16 @@ function getDrinkSuggestion(tempF, text) {
   return text.coldSuggestion;
 }
 
+function getFocusableElements(container) {
+  if (!container) return [];
+
+  return Array.from(
+    container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  );
+}
+
 export default function CustomerKiosk() {
   const [drinks, setDrinks] = useState([]);
   const [addons, setAddons] = useState([]);
@@ -76,12 +95,17 @@ export default function CustomerKiosk() {
   const [orderId, setOrderId] = useState(null);
   const [receiptData, setReceiptData] = useState(null);
   const [weather, setWeather] = useState(null);
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => localStorage.getItem('boba_language') || 'en');
   const [uiText, setUiText] = useState(DEFAULT_TEXT);
   const [translatedNames, setTranslatedNames] = useState({ drinks: {}, addons: {} });
   const [isTranslating, setIsTranslating] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
 
   const navigate = useNavigate();
+  const modalRef = useRef(null);
+  const modalCancelRef = useRef(null);
+  const lastTriggerRef = useRef(null);
 
   const [favorites, setFavorites] = useState(() =>
     JSON.parse(localStorage.getItem('boba_favorites') || '[]')
@@ -97,6 +121,10 @@ export default function CustomerKiosk() {
   useEffect(() => {
     localStorage.setItem('boba_history', JSON.stringify(history));
   }, [history]);
+
+  useEffect(() => {
+    localStorage.setItem('boba_language', language);
+  }, [language]);
 
   useEffect(() => {
     fetchDrinks().then((data) => setDrinks(Array.isArray(data) ? data : []));
@@ -167,6 +195,16 @@ export default function CustomerKiosk() {
     runTranslation();
   }, [language, drinks, addons]);
 
+  useEffect(() => {
+    if (!modal) return;
+
+    const focusTimer = window.setTimeout(() => {
+      modalCancelRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [modal]);
+
   const favoriteDrinks = useMemo(
     () => drinks.filter((drink) => favorites.includes(drink.menu_item_id)),
     [drinks, favorites]
@@ -180,25 +218,91 @@ export default function CustomerKiosk() {
   const getDrinkName = (drink) => translatedNames.drinks[drink.menu_item_id] || drink.item_name;
   const getAddonName = (addon) => translatedNames.addons[addon.menu_item_id] || addon.item_name;
 
-  const openDrink = (drink) => {
+  const updateAccessibility = (updates) => {
+    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
+    setAccessibility(next);
+
+    if (updates.contrast) {
+      setAnnouncement(getContrastAnnouncement(next.contrast));
+    }
+    if (updates.textSize) {
+      setAnnouncement(getTextSizeAnnouncement(next.textSize));
+    }
+  };
+
+  const closeModal = () => {
+    setModal(null);
+    window.setTimeout(() => {
+      lastTriggerRef.current?.focus?.();
+    }, 0);
+  };
+
+  const openDrink = (drink, triggerElement) => {
+    lastTriggerRef.current = triggerElement || document.activeElement;
     setModal(drink);
     setSelectedAddons([]);
     setIceLevel('100%');
     setSugarLevel('100%');
   };
 
+  const handleModalKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = getFocusableElements(modalRef.current);
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   const toggleAddon = (addon) => {
+    const isAlreadySelected = selectedAddons.some(
+      (item) => item.menu_item_id === addon.menu_item_id
+    );
+
     setSelectedAddons((prev) =>
-      prev.find((item) => item.menu_item_id === addon.menu_item_id)
+      isAlreadySelected
         ? prev.filter((item) => item.menu_item_id !== addon.menu_item_id)
         : [...prev, addon]
+    );
+
+    setAnnouncement(
+      isAlreadySelected
+        ? `${getAddonName(addon)} removed from add-ons.`
+        : `${getAddonName(addon)} added to add-ons.`
     );
   };
 
   const toggleFavorite = (drinkId) => {
+    const drink = drinks.find((item) => item.menu_item_id === drinkId);
+    const alreadyFavorite = favorites.includes(drinkId);
+
     setFavorites((prev) =>
-      prev.includes(drinkId) ? prev.filter((id) => id !== drinkId) : [...prev, drinkId]
+      alreadyFavorite ? prev.filter((id) => id !== drinkId) : [...prev, drinkId]
     );
+
+    if (drink) {
+      setAnnouncement(
+        alreadyFavorite
+          ? `${getDrinkName(drink)} removed from favorites.`
+          : `${getDrinkName(drink)} added to favorites.`
+      );
+    }
   };
 
   const addToCart = () => {
@@ -219,7 +323,14 @@ export default function CustomerKiosk() {
         sugar: sugarLevel,
       },
     ]);
-    setModal(null);
+
+    setAnnouncement(`${getDrinkName(modal)} added to cart.`);
+    closeModal();
+  };
+
+  const removeCartItem = (index, itemName) => {
+    setCart((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setAnnouncement(`${itemName} removed from cart.`);
   };
 
   const submitOrder = async () => {
@@ -247,21 +358,41 @@ export default function CustomerKiosk() {
 
     setHistory((prev) => [completedOrder, ...prev].slice(0, 10));
     setCart([]);
+    setAnnouncement(`Order ${response.order_id} placed successfully.`);
     setScreen('confirm');
+  };
+
+  const handleLanguageChange = (event) => {
+    const nextLanguage = event.target.value;
+    setLanguage(nextLanguage);
+
+    const selected = LANGUAGES.find((option) => option.code === nextLanguage);
+    if (selected) {
+      setAnnouncement(`Language changed to ${selected.label}.`);
+    }
   };
 
   if (screen === 'confirm') {
     return (
       <main style={styles.confirmScreen} id="main-content" aria-label="Order confirmation">
+        <p className="sr-only" aria-live="polite">
+          {announcement}
+        </p>
+
         <div style={styles.confirmBox}>
-          <div style={{ fontSize: '64px' }} aria-hidden="true">
+          <div style={{ fontSize: '4rem' }} aria-hidden="true">
             🧋
           </div>
-          <h1 style={{ fontSize: '32px', color: 'var(--green)' }}>{uiText.orderPlaced}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '18px' }}>Order #{orderId}</p>
+          <h1 style={{ fontSize: '2rem', color: 'var(--green)' }}>{uiText.orderPlaced}</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Order #{orderId}</p>
           <p style={{ color: 'var(--text-muted)' }}>{uiText.waitForName}</p>
           <button
-            style={{ ...styles.bigBtn, background: 'var(--purple)', marginBottom: '12px', marginTop: '12px' }}
+            style={{
+              ...styles.bigBtn,
+              background: 'var(--purple)',
+              marginBottom: '12px',
+              marginTop: '12px',
+            }}
             onClick={() =>
               setReceiptData({
                 orderId,
@@ -276,7 +407,10 @@ export default function CustomerKiosk() {
           </button>
           <button
             style={{ ...styles.bigBtn, background: 'var(--border)' }}
-            onClick={() => setScreen('menu')}
+            onClick={() => {
+              setAnnouncement('Starting a new order.');
+              setScreen('menu');
+            }}
           >
             {uiText.startNewOrder}
           </button>
@@ -288,6 +422,10 @@ export default function CustomerKiosk() {
 
   return (
     <main style={styles.layout} id="main-content">
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+
       <header style={styles.header}>
         <button style={styles.backBtn} onClick={() => navigate('/')} aria-label="Return to portal">
           {uiText.home}
@@ -309,7 +447,7 @@ export default function CustomerKiosk() {
           <select
             id="kiosk-language"
             value={language}
-            onChange={(event) => setLanguage(event.target.value)}
+            onChange={handleLanguageChange}
             style={styles.languageSelect}
             aria-label={uiText.language}
           >
@@ -325,7 +463,7 @@ export default function CustomerKiosk() {
               style={styles.weatherBox}
               aria-label={`Current weather ${weather.temp} degrees Fahrenheit with wind ${weather.wind} miles per hour`}
             >
-              <span style={{ fontSize: '28px' }} aria-hidden="true">
+              <span style={{ fontSize: '1.75rem' }} aria-hidden="true">
                 {getWeatherEmoji(weather.code)}
               </span>
               <div style={styles.weatherText}>
@@ -336,12 +474,22 @@ export default function CustomerKiosk() {
           )}
 
           <div style={styles.navButtons}>
-            <button style={styles.navToggle} onClick={() => setScreen('history')}>
+            <button
+              style={styles.navToggle}
+              onClick={() => {
+                setAnnouncement('Viewing order history.');
+                setScreen('history');
+              }}
+            >
               📜 {uiText.history}
             </button>
             <button
               style={styles.cartToggle}
-              onClick={() => setScreen(screen === 'cart' ? 'menu' : 'cart')}
+              onClick={() => {
+                const nextScreen = screen === 'cart' ? 'menu' : 'cart';
+                setAnnouncement(nextScreen === 'cart' ? 'Viewing cart.' : 'Returning to menu.');
+                setScreen(nextScreen);
+              }}
               aria-label={`${uiText.cart}. ${cart.length} items.`}
             >
               🛒 {uiText.cart} ({cart.length})
@@ -349,6 +497,20 @@ export default function CustomerKiosk() {
           </div>
         </div>
       </header>
+
+      <div style={styles.topPanel}>
+        <AccessibilityToolbar
+          settings={accessibility}
+          onContrastChange={(value) => updateAccessibility({ contrast: value })}
+          onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
+          compact
+        />
+
+        <section style={styles.helpBox} aria-label="Accessibility help">
+          <h2 style={styles.helpTitle}>Kiosk help</h2>
+          <p style={styles.helpText}>{uiText.accessibilityHelp}</p>
+        </section>
+      </div>
 
       {weather && screen === 'menu' && (
         <div style={styles.suggestionBanner} role="status" aria-live="polite">
@@ -366,14 +528,18 @@ export default function CustomerKiosk() {
                   <div key={`favorite-${drink.menu_item_id}`} style={styles.drinkCardWrap}>
                     <button
                       style={styles.drinkCard}
-                      onClick={() => openDrink(drink)}
-                      aria-label={`${getDrinkName(drink)}. ${parseFloat(drink.base_price).toFixed(2)} dollars.`}
+                      onClick={(event) => openDrink(drink, event.currentTarget)}
+                      aria-label={`${getDrinkName(drink)}. ${parseFloat(
+                        drink.base_price
+                      ).toFixed(2)} dollars.`}
                     >
                       <span style={styles.drinkEmoji} aria-hidden="true">
                         🧋
                       </span>
                       <span style={styles.drinkName}>{getDrinkName(drink)}</span>
-                      <span style={styles.drinkPrice}>${parseFloat(drink.base_price).toFixed(2)}</span>
+                      <span style={styles.drinkPrice}>
+                        ${parseFloat(drink.base_price).toFixed(2)}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -397,14 +563,18 @@ export default function CustomerKiosk() {
                 <div key={drink.menu_item_id} style={styles.drinkCardWrap}>
                   <button
                     style={styles.drinkCard}
-                    onClick={() => openDrink(drink)}
-                    aria-label={`${getDrinkName(drink)}. ${parseFloat(drink.base_price).toFixed(2)} dollars.`}
+                    onClick={(event) => openDrink(drink, event.currentTarget)}
+                    aria-label={`${getDrinkName(drink)}. ${parseFloat(
+                      drink.base_price
+                    ).toFixed(2)} dollars.`}
                   >
                     <span style={styles.drinkEmoji} aria-hidden="true">
                       🧋
                     </span>
                     <span style={styles.drinkName}>{getDrinkName(drink)}</span>
-                    <span style={styles.drinkPrice}>${parseFloat(drink.base_price).toFixed(2)}</span>
+                    <span style={styles.drinkPrice}>
+                      ${parseFloat(drink.base_price).toFixed(2)}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -435,14 +605,13 @@ export default function CustomerKiosk() {
               style={{ ...styles.cartRow, flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <div style={styles.historyHeaderRow}>
-                <span style={{ fontWeight: 700, fontSize: '18px' }}>Order #{order.orderId}</span>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                  Order #{order.orderId}
+                </span>
                 <span style={{ color: 'var(--text-muted)' }}>{order.date}</span>
               </div>
               {order.items.map((item, itemIndex) => (
-                <div
-                  key={`${item.menu_item_id}-${itemIndex}`}
-                  style={styles.historyItem}
-                >
+                <div key={`${item.menu_item_id}-${itemIndex}`} style={styles.historyItem}>
                   <div style={{ fontWeight: 600 }}>
                     {item.item_name}{' '}
                     <span style={{ color: 'var(--pink)' }}>
@@ -467,6 +636,7 @@ export default function CustomerKiosk() {
                   style={{ ...styles.removeBtn, background: 'var(--purple)' }}
                   onClick={() => {
                     setCart((prev) => [...prev, ...order.items]);
+                    setAnnouncement(`Items from order ${order.orderId} added to cart.`);
                     setScreen('cart');
                   }}
                 >
@@ -491,7 +661,7 @@ export default function CustomerKiosk() {
           {cart.map((item, index) => (
             <article key={`${item.menu_item_id}-${index}`} style={styles.cartRow}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '18px' }}>{item.item_name}</div>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{item.item_name}</div>
                 <div style={{ color: 'var(--text-muted)' }}>
                   Ice: {item.ice} | Sugar: {item.sugar}
                 </div>
@@ -502,12 +672,12 @@ export default function CustomerKiosk() {
                 ))}
               </div>
               <div style={styles.cartRowActions}>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--pink)' }}>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--pink)' }}>
                   ${parseFloat(item.sale_price).toFixed(2)}
                 </span>
                 <button
                   style={styles.removeBtn}
-                  onClick={() => setCart((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}
+                  onClick={() => removeCartItem(index, item.item_name)}
                 >
                   {uiText.remove}
                 </button>
@@ -517,8 +687,8 @@ export default function CustomerKiosk() {
           {cart.length > 0 && (
             <div style={{ marginTop: '24px' }}>
               <div style={styles.totalRow} aria-label={`${uiText.total} ${total.toFixed(2)} dollars`}>
-                <span style={{ fontSize: '22px' }}>{uiText.total}</span>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--pink)' }}>
+                <span style={{ fontSize: '1.4rem' }}>{uiText.total}</span>
+                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--pink)' }}>
                   ${total.toFixed(2)}
                 </span>
               </div>
@@ -538,9 +708,18 @@ export default function CustomerKiosk() {
 
       {modal && (
         <div style={styles.overlay} role="dialog" aria-modal="true" aria-label={getDrinkName(modal)}>
-          <div style={styles.modalBox}>
+          <div
+            ref={modalRef}
+            style={styles.modalBox}
+            onKeyDown={handleModalKeyDown}
+            aria-describedby="customization-help"
+          >
+            <p id="customization-help" className="sr-only">
+              Use Tab to move through customization options. Press Escape to close this dialog.
+            </p>
+
             <h2 style={{ marginBottom: '8px' }}>{getDrinkName(modal)}</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '20px', fontSize: '18px' }}>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '20px', fontSize: '1.1rem' }}>
               ${parseFloat(modal.base_price).toFixed(2)}
             </p>
 
@@ -603,8 +782,9 @@ export default function CustomerKiosk() {
 
             <div style={styles.modalButtons}>
               <button
+                ref={modalCancelRef}
                 style={{ ...styles.bigBtn, flex: 1, background: 'var(--border)' }}
-                onClick={() => setModal(null)}
+                onClick={closeModal}
               >
                 {uiText.cancel}
               </button>
@@ -648,9 +828,13 @@ const styles = {
     gap: '12px',
     flexWrap: 'wrap',
   },
-  logo: { fontSize: '28px', fontWeight: 800, color: 'var(--pink)' },
+  logo: {
+    fontSize: '1.75rem',
+    fontWeight: 800,
+    color: 'var(--pink)',
+  },
   translatingText: {
-    fontSize: '12px',
+    fontSize: '0.82rem',
     color: 'var(--text-muted)',
     marginTop: '4px',
   },
@@ -667,23 +851,53 @@ const styles = {
     borderRadius: '12px',
     padding: '10px 16px',
   },
-  weatherText: { display: 'flex', flexDirection: 'column' },
-  weatherTemp: { fontWeight: 800, fontSize: '20px', color: 'var(--text)' },
-  weatherWind: { fontSize: '12px', color: 'var(--text-muted)' },
+  weatherText: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  weatherTemp: {
+    fontWeight: 800,
+    fontSize: '1.15rem',
+    color: 'var(--text)',
+  },
+  weatherWind: {
+    fontSize: '0.82rem',
+    color: 'var(--text-muted)',
+  },
+  topPanel: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(300px, 1.2fr) minmax(260px, 0.8fr)',
+    gap: '20px',
+    padding: '20px 32px 0',
+  },
+  helpBox: {
+    background: 'var(--dark-card)',
+    border: '1px solid var(--border)',
+    borderRadius: '12px',
+    padding: '16px',
+  },
+  helpTitle: {
+    fontWeight: 700,
+    marginBottom: '6px',
+  },
+  helpText: {
+    color: 'var(--text-muted)',
+  },
   suggestionBanner: {
     background: 'var(--purple)',
     color: 'white',
     padding: '12px 32px',
-    fontSize: '16px',
+    fontSize: '1rem',
     fontWeight: 600,
     textAlign: 'center',
+    marginTop: '20px',
   },
   cartToggle: {
     background: 'var(--purple)',
     color: 'white',
     borderRadius: '12px',
     padding: '14px 24px',
-    fontSize: '18px',
+    fontSize: '1rem',
     fontWeight: 700,
   },
   navToggle: {
@@ -692,11 +906,17 @@ const styles = {
     color: 'white',
     borderRadius: '12px',
     padding: '14px 24px',
-    fontSize: '18px',
+    fontSize: '1rem',
     fontWeight: 700,
   },
-  menuContainer: { padding: '32px' },
-  sectionTitle: { marginBottom: '20px', color: 'var(--text)', fontSize: '24px' },
+  menuContainer: {
+    padding: '32px',
+  },
+  sectionTitle: {
+    marginBottom: '20px',
+    color: 'var(--text)',
+    fontSize: '1.5rem',
+  },
   menuGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -727,10 +947,25 @@ const styles = {
     padding: '6px 10px',
     borderRadius: '999px',
   },
-  drinkEmoji: { fontSize: '40px' },
-  drinkName: { fontWeight: 700, fontSize: '16px', textAlign: 'center' },
-  drinkPrice: { color: 'var(--pink)', fontWeight: 800, fontSize: '20px' },
-  cartView: { padding: '32px', maxWidth: '760px', margin: '0 auto', width: '100%' },
+  drinkEmoji: {
+    fontSize: '2.5rem',
+  },
+  drinkName: {
+    fontWeight: 700,
+    fontSize: '1rem',
+    textAlign: 'center',
+  },
+  drinkPrice: {
+    color: 'var(--pink)',
+    fontWeight: 800,
+    fontSize: '1.25rem',
+  },
+  cartView: {
+    padding: '32px',
+    maxWidth: '760px',
+    margin: '0 auto',
+    width: '100%',
+  },
   cartRow: {
     background: 'var(--dark-card)',
     border: '1px solid var(--border)',
@@ -742,7 +977,11 @@ const styles = {
     alignItems: 'center',
     gap: '16px',
   },
-  cartRowActions: { display: 'flex', gap: '12px', alignItems: 'center' },
+  cartRowActions: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
   removeBtn: {
     background: 'var(--red)',
     color: 'white',
@@ -762,7 +1001,7 @@ const styles = {
     color: 'white',
     borderRadius: '12px',
     padding: '18px',
-    fontSize: '18px',
+    fontSize: '1rem',
     fontWeight: 700,
     width: '100%',
   },
@@ -772,6 +1011,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     background: 'var(--dark)',
+    padding: '24px',
   },
   confirmBox: {
     textAlign: 'center',
@@ -800,15 +1040,22 @@ const styles = {
     maxHeight: '90vh',
     overflowY: 'auto',
   },
-  modalLabel: { fontWeight: 700, marginBottom: '6px', fontSize: '16px' },
-  levelGroup: { display: 'flex', gap: '10px' },
+  modalLabel: {
+    fontWeight: 700,
+    marginBottom: '6px',
+    fontSize: '1rem',
+  },
+  levelGroup: {
+    display: 'flex',
+    gap: '10px',
+  },
   levelBtn: {
     flex: 1,
     borderRadius: '10px',
     padding: '12px',
     color: 'white',
     fontWeight: 700,
-    fontSize: '16px',
+    fontSize: '1rem',
   },
   addonGrid: {
     display: 'grid',
@@ -822,9 +1069,13 @@ const styles = {
     padding: '14px',
     color: 'white',
     fontWeight: 600,
-    fontSize: '14px',
+    fontSize: '0.92rem',
   },
-  modalButtons: { display: 'flex', gap: '12px', marginTop: '24px' },
+  modalButtons: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '24px',
+  },
   backBtn: {
     background: 'var(--dark)',
     border: '1px solid var(--border)',
@@ -846,7 +1097,10 @@ const styles = {
     borderLeft: '2px solid var(--border)',
     marginBottom: '8px',
   },
-  historyMeta: { fontSize: '12px', color: 'var(--text-muted)' },
+  historyMeta: {
+    fontSize: '0.82rem',
+    color: 'var(--text-muted)',
+  },
   historyFooterRow: {
     display: 'flex',
     justifyContent: 'space-between',

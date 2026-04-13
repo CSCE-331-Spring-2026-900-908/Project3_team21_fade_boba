@@ -2,10 +2,31 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { verifyGoogleToken } from '../api/api';
+import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import {
+  getContrastAnnouncement,
+  getTextSizeAnnouncement,
+  readAccessibilitySettings,
+  updateAccessibilitySettings,
+} from '../utils/accessibility';
 
 export default function Login() {
   const [error, setError] = useState('');
+  const [announcement, setAnnouncement] = useState('');
+  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
   const navigate = useNavigate();
+
+  const updateAccessibility = (updates) => {
+    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
+    setAccessibility(next);
+
+    if (updates.contrast) {
+      setAnnouncement(getContrastAnnouncement(next.contrast));
+    }
+    if (updates.textSize) {
+      setAnnouncement(getTextSizeAnnouncement(next.textSize));
+    }
+  };
 
   const handleLoginSuccess = async (credentialResponse) => {
     setError('');
@@ -36,29 +57,55 @@ export default function Login() {
 
   return (
     <main style={styles.bg} id="main-content">
-      <div style={styles.box}>
-        <h1 style={styles.logo}>🧋 Fade Boba</h1>
-        <h2 style={styles.title}>Staff Sign In</h2>
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
 
-        <p style={styles.subtitle}>
-          Managers and cashiers should authenticate below. Customers should use the kiosk
-          from the portal page.
-        </p>
+      <div style={styles.wrapper}>
+        <AccessibilityToolbar
+          settings={accessibility}
+          onContrastChange={(value) => updateAccessibility({ contrast: value })}
+          onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
+        />
 
-        {error && <p style={styles.error}>{error}</p>}
+        <section style={styles.box} aria-labelledby="login-title">
+          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h2 id="login-title" style={styles.title}>
+            Staff Sign In
+          </h2>
 
-        <div style={styles.btnContainer}>
-          <GoogleLogin
-            onSuccess={handleLoginSuccess}
-            onError={() => setError('Google Login UI Failed')}
-            theme="filled_black"
-            shape="rectangular"
-          />
-        </div>
+          <p style={styles.subtitle}>
+            Managers and cashiers should authenticate below. Customers should use the kiosk
+            from the portal page.
+          </p>
 
-        <button style={styles.backBtn} onClick={() => navigate('/')}>
-          Back to Portal
-        </button>
+          {error && (
+            <p style={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+
+          <div style={styles.helpBox}>
+            <p style={styles.helpTitle}>Keyboard and screen reader support</p>
+            <p style={styles.helpText}>
+              Use Tab to move through controls. Use the accessibility settings above for
+              high contrast or larger text.
+            </p>
+          </div>
+
+          <div style={styles.btnContainer} aria-label="Google sign-in section">
+            <GoogleLogin
+              onSuccess={handleLoginSuccess}
+              onError={() => setError('Google Login UI Failed')}
+              theme="filled_black"
+              shape="rectangular"
+            />
+          </div>
+
+          <button style={styles.backBtn} onClick={() => navigate('/')}>
+            Back to Portal
+          </button>
+        </section>
       </div>
     </main>
   );
@@ -73,33 +120,64 @@ const styles = {
     background: 'var(--dark)',
     padding: '24px',
   },
+  wrapper: {
+    width: '100%',
+    maxWidth: '720px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
   box: {
     background: 'var(--dark-card)',
     border: '1px solid var(--border)',
     borderRadius: '16px',
-    padding: '50px',
-    width: '450px',
-    maxWidth: '100%',
+    padding: '40px',
     display: 'flex',
     flexDirection: 'column',
     gap: '18px',
   },
   logo: {
-    fontSize: '36px',
+    fontSize: '2.25rem',
     textAlign: 'center',
     color: 'var(--pink)',
     fontWeight: 800,
-    margin: '0 0 10px 0',
+    margin: '0 0 8px 0',
   },
-  title: { textAlign: 'center', fontWeight: 700, fontSize: '24px', margin: '0' },
+  title: {
+    textAlign: 'center',
+    fontWeight: 700,
+    fontSize: '1.6rem',
+    margin: '0',
+  },
   subtitle: {
     textAlign: 'center',
-    fontSize: '15px',
+    fontSize: '1rem',
     color: 'var(--text-muted)',
-    marginBottom: '10px',
+    marginBottom: '6px',
   },
-  error: { color: 'var(--red)', fontSize: '14px', textAlign: 'center' },
-  btnContainer: { display: 'flex', justifyContent: 'center', marginTop: '10px' },
+  helpBox: {
+    background: 'var(--surface-muted)',
+    border: '1px solid var(--border)',
+    borderRadius: '12px',
+    padding: '14px 16px',
+  },
+  helpTitle: {
+    fontWeight: 700,
+    marginBottom: '4px',
+  },
+  helpText: {
+    color: 'var(--text-muted)',
+  },
+  error: {
+    color: 'var(--red)',
+    fontSize: '0.95rem',
+    textAlign: 'center',
+  },
+  btnContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '4px',
+  },
   backBtn: {
     background: 'var(--border)',
     color: 'var(--text)',
