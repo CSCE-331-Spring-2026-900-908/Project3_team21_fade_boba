@@ -9,6 +9,7 @@ import {
   readAccessibilitySettings,
   updateAccessibilitySettings,
 } from '../utils/accessibility';
+import bobaImg from '../images/boba_test.png';
 
 const KIOSK_EMPLOYEE_ID = 1;
 const WEATHER_URL =
@@ -553,9 +554,11 @@ export default function CustomerKiosk() {
                         drink.base_price
                       ).toFixed(2)} dollars.`}
                     >
-                      <span style={styles.drinkEmoji} aria-hidden="true">
-                        🧋
-                      </span>
+                      <img
+                        src={bobaImg}
+                        alt={getDrinkName(drink)}
+                        style={styles.drinkImage}
+                      />
                       <span style={styles.drinkName}>{getDrinkName(drink)}</span>
                       <span style={styles.drinkPrice}>
                         ${parseFloat(drink.base_price).toFixed(2)}
@@ -600,9 +603,11 @@ export default function CustomerKiosk() {
                         {getWeatherEmoji(weather?.code)} Weather Pick
                       </div>
                     )}
-                    <span style={styles.drinkEmoji} aria-hidden="true">
-                      🧋
-                    </span>
+                    <img
+                      src={bobaImg}
+                      alt={getDrinkName(drink)}
+                      style={styles.drinkImage}
+                    />
                     <span style={styles.drinkName}>{getDrinkName(drink)}</span>
                     <span style={styles.drinkPrice}>
                       ${parseFloat(drink.base_price).toFixed(2)}
@@ -1151,5 +1156,10 @@ const styles = {
   padding: '3px 10px', 
   borderRadius: '99px', 
   marginBottom: '4px' 
+  },
+  drinkImage: {
+  width: '70px',
+  height: '70px',
+  objectFit: 'contain',
   },
 };
