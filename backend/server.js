@@ -1,14 +1,15 @@
 require('dotenv').config();
-const express = require('express');   // get necessary packages/parameters
+const express = require('express');
 const cors = require('cors');
 
 const menuRoutes = require('./routes/menu');
-const ordersRoutes = require('./routes/orders');        // get the different database pieces
+const ordersRoutes = require('./routes/orders');
 const inventoryRoutes = require('./routes/inventory');
 const employeesRoutes = require('./routes/employees');
-const authRoutes = require('./routes/auth');            // get the auth route
+const authRoutes = require('./routes/auth');
+const translateRoutes = require('./routes/translate');
 
-const app = express();                  // create an app with previous information, host on port 3001
+const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
@@ -18,12 +19,13 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/employees', employeesRoutes);
-app.use('/api/auth', authRoutes);                       // use the auth route
+app.use('/api/auth', authRoutes);
+app.use('/api/translate', translateRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', shop: 'Fade Boba' });
 });
 
 app.listen(PORT, () => {
-  console.log(`Fade Boba backend running on http://localhost:${PORT}`);   // log the server running the site in console
+  console.log(`Fade Boba backend running on http://localhost:${PORT}`);
 });
