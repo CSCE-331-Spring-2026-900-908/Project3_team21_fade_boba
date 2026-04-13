@@ -18,14 +18,19 @@ export async function fetchMenu() {
   return res.json();
 }
 
-export async function loginEmployee(employee_id) {
-  const res = await fetch(`${BASE}/employees/login`, {
+export async function loginEmployee(pin) {
+  const res = await fetch(`${BASE}/auth/pin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ employee_id }),
+    body: JSON.stringify({ pin }), // Sending "0001" instead of the ID
   });
-  if (!res.ok) throw new Error('Employee not found');
-  return res.json();
+
+  if (!res.ok) throw new Error('Server error during login');
+  
+  const data = await res.json();
+  if (!data.success) throw new Error('Invalid PIN');
+  
+  return data.user; // Returns the employee object (id, name, role)
 }
 
 export async function placeOrder(employee_id, items) {

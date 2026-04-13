@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { verifyGoogleToken } from '../api/api';
+import { loginEmployee } from '../api/api';
 import AccessibilityToolbar from '../components/AccessibilityToolbar';
 import {
   getContrastAnnouncement,
@@ -30,32 +31,27 @@ export default function Login() {
   };
 
   const handlePinLogin = async () => {
+    if (!pin.trim()) return setError('Please enter a PIN.');
     setError('');
 
     try {
-      const res = await fetch('/api/auth/pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin }),
-      });
+      // 1. Use the helper from your api.js
+      const user = await loginEmployee(pin); 
 
-      const data = await res.json();
+      // 2. Store user data in sessionStorage
+      sessionStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('userType', 'employee');
 
-      if (data.success) {
-        sessionStorage.setItem('user', JSON.stringify(data.user));
-        sessionStorage.setItem('userType', 'employee');
-
-        if (data.user.role === 'Manager') {
-          navigate('/manager');
-        } else {
-          navigate('/cashier');
-        }
+      // 3. Route based on the role returned from the database
+      if (user.role === 'Manager') {
+        navigate('/manager');
       } else {
-        setError('Invalid PIN');
+        navigate('/cashier');
       }
     } catch (err) {
       console.error(err);
-      setError('Server error during PIN login.');
+      // This catches both "Invalid PIN" and "Server Error"
+      setError(err.message || 'Login failed. Please try again.');
     }
   };
 
