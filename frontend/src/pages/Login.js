@@ -15,6 +15,7 @@ export default function Login() {
   const [announcement, setAnnouncement] = useState('');
   const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
   const navigate = useNavigate();
+  const [pin, setPin] = useState('');
 
   const updateAccessibility = (updates) => {
     const next = updateAccessibilitySettings({ ...accessibility, ...updates });
@@ -25,6 +26,36 @@ export default function Login() {
     }
     if (updates.textSize) {
       setAnnouncement(getTextSizeAnnouncement(next.textSize));
+    }
+  };
+
+  const handlePinLogin = async () => {
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('userType', 'employee');
+
+        if (data.user.role === 'Manager') {
+          navigate('/manager');
+        } else {
+          navigate('/cashier');
+        }
+      } else {
+        setError('Invalid PIN');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Server error during PIN login.');
     }
   };
 
@@ -92,6 +123,22 @@ export default function Login() {
               high contrast or larger text.
             </p>
           </div>
+
+          <div style={styles.pinSection}>
+            <input
+              type="password"
+              placeholder="Enter PIN"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              style={styles.input}
+            />
+
+            <button onClick={handlePinLogin} style={styles.pinBtn}>
+              Login with PIN
+            </button>
+          </div>
+
+          <div style={styles.divider}>OR</div>
 
           <div style={styles.btnContainer} aria-label="Google sign-in section">
             <GoogleLogin
@@ -181,5 +228,34 @@ const styles = {
   backBtn: {
     background: 'var(--border)',
     color: 'var(--text)',
+  },
+  pinSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginTop: '10px',
+  },
+
+  input: {
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid var(--border)',
+    background: 'var(--dark)',
+    color: 'white',
+  },
+
+  pinBtn: {
+    background: 'var(--purple)',
+    color: 'white',
+    padding: '12px',
+    borderRadius: '10px',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+
+  divider: {
+    textAlign: 'center',
+    margin: '10px 0',
+    color: 'var(--text-muted)',
   },
 };

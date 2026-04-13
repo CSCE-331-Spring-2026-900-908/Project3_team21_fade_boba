@@ -63,4 +63,29 @@ router.post('/google', async (req, res) => {
   }
 });
 
+router.post('/pin', async (req, res) => {
+  const { pin } = req.body;
+
+  try {
+    const result = await pool.query(
+      'SELECT employee_id, first_name, last_name, role FROM Employees WHERE pin = $1',
+      [pin]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      userType: 'employee',
+      user: result.rows[0],
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
+
 module.exports = router;
