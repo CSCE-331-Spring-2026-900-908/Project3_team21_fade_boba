@@ -73,6 +73,21 @@ function getDrinkSuggestion(tempF, text) {
   return text.coldSuggestion;
 }
 
+function getRecommendedDrink(tempF) {
+  if (tempF >= 85) return 'Strawberry Slush';
+  if (tempF >= 70) return 'Brown Sugar Boba';
+  if (tempF >= 55) return 'Thai Milk Tea';
+  return 'Classic Milk Tea';
+}
+
+function sortDrinks(drinks, recommendedName) {
+  return [...drinks].sort((a, b) => {
+    if (a.item_name === recommendedName) return -1;
+    if (b.item_name === recommendedName) return 1;
+    return 0;
+  });
+}
+
 function getFocusableElements(container) {
   if (!container) return [];
 
@@ -85,6 +100,7 @@ function getFocusableElements(container) {
 
 export default function CustomerKiosk() {
   const [drinks, setDrinks] = useState([]);
+  const [recommended, setRecommended] = useState(null);
   const [addons, setAddons] = useState([]);
   const [cart, setCart] = useState([]);
   const [modal, setModal] = useState(null);
@@ -135,11 +151,13 @@ export default function CustomerKiosk() {
       .then((data) => {
         const current = data.current_weather;
         if (!current) return;
+        const temp = Math.round(current.temperature);
         setWeather({
           temp: Math.round(current.temperature),
           code: current.weathercode,
           wind: Math.round(current.windspeed),
         });
+        setRecommended(getRecommendedDrink(temp)); 
       })
       .catch(() => setWeather(null));
   }, []);
@@ -209,6 +227,8 @@ export default function CustomerKiosk() {
     () => drinks.filter((drink) => favorites.includes(drink.menu_item_id)),
     [drinks, favorites]
   );
+
+  const sortedDrinks = recommended ? sortDrinks(drinks, recommended) : drinks;
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + parseFloat(item.sale_price), 0),
@@ -557,17 +577,29 @@ export default function CustomerKiosk() {
           )}
 
           <div style={styles.menuGrid}>
-            {drinks.map((drink) => {
+            {sortedDrinks.map((drink) => {
               const isFavorite = favorites.includes(drink.menu_item_id);
+              const isRec = drink.item_name === recommended;
               return (
-                <div key={drink.menu_item_id} style={styles.drinkCardWrap}>
+                <div key={drink.menu_item_id} style={{
+                  ...styles.drinkCardWrap,
+                  ...(isRec ? { filter: 'drop-shadow(0 0 12px rgba(245,158,11,0.5))' } : {})
+                }}>
                   <button
-                    style={styles.drinkCard}
+                    style={{
+                      ...styles.drinkCard,
+                      ...(isRec ? { border: '2px solid #F59E0B', background: '#2A1F0A' } : {})
+                    }}
                     onClick={(event) => openDrink(drink, event.currentTarget)}
                     aria-label={`${getDrinkName(drink)}. ${parseFloat(
                       drink.base_price
-                    ).toFixed(2)} dollars.`}
+                    ).toFixed(2)} dollars.${isRec ? ' Weather recommended drink.' : ''}`}
                   >
+                    {isRec && (
+                      <div style={styles.recBadge}>
+                        {getWeatherEmoji(weather?.code)} Weather Pick
+                      </div>
+                    )}
                     <span style={styles.drinkEmoji} aria-hidden="true">
                       🧋
                     </span>
@@ -1110,5 +1142,14 @@ const styles = {
     paddingTop: '10px',
     gap: '12px',
     flexWrap: 'wrap',
+  },
+  recBadge: { 
+  background: '#F59E0B', 
+  color: '#000', 
+  fontSize: '11px', 
+  fontWeight: 800, 
+  padding: '3px 10px', 
+  borderRadius: '99px', 
+  marginBottom: '4px' 
   },
 };
