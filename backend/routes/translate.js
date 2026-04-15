@@ -1,6 +1,18 @@
 const express = require('express');
 const router = express.Router();
 
+const MYMEMORY_BASE_URL = 'https://api.mymemory.translated.net/get';
+const CONTACT_EMAIL = process.env.TRANSLATE_CONTACT_EMAIL || '';
+
+function decodeHtmlEntities(text = '') {
+  return text
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
 router.post('/', async (req, res) => {
   const { texts, target } = req.body;
 
@@ -8,30 +20,40 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'texts array and target are required' });
   }
 
-  if (!process.env.GOOGLE_TRANSLATE_API_KEY) {
-    return res.json({ translations: texts });
-  }
-
   try {
-    const params = new URLSearchParams({
-      target,
-      key: process.env.GOOGLE_TRANSLATE_API_KEY,
-    });
+    const translations = await Promise.all(
+      texts.map(async (text) => {
+        if (typeof text !== 'string' || !text.trim()) {
+          return text;
+        }
 
-    texts.forEach((text) => params.append('q', text));
+        const params = new URLSearchParams({
+          q: text,
+          langpair: `en|${target}`,
+        });
 
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?${params.toString()}`
+        if (CONTACT_EMAIL) {
+          params.append('de', CONTACT_EMAIL);
+        }
+
+        const response = await fetch(`${MYMEMORY_BASE_URL}?${params.toString()}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error('MyMemory request failed:', data);
+          return text;
+        }
+
+        const translated =
+          data?.responseData?.translatedText ||
+          data?.matches?.[0]?.translation ||
+          text;
+
+        return decodeHtmlEntities(translated);
+      })
     );
-    const data = await response.json();
 
-    if (!response.ok || data.error) {
-      console.error('Translate API error:', data.error || data);
-      return res.json({ translations: texts });
-    }
-
-    const translations = (data.data?.translations || []).map((entry) => entry.translatedText);
-    return res.json({ translations: translations.length === texts.length ? translations : texts });
+    return res.json({ translations });
   } catch (error) {
     console.error('Translate route error:', error);
     return res.json({ translations: texts });
