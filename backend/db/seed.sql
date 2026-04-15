@@ -94,7 +94,8 @@ INSERT INTO Menu_Items (item_name, base_price, item_type) VALUES
 ('Sparkling Strawberry', 4.75, 'Drink'),
 ('Hot Chocolate', 4.50, 'Drink'),
 ('Hot Matcha', 5.00, 'Drink'),
-('Hot Taro', 4.75, 'Drink');
+('Hot Taro', 4.75, 'Drink')
+ON CONFLICT (item_name) DO NOTHING;
 
 -- 3. SEED MENU ITEMS (Addons)
 INSERT INTO Menu_Items (item_name, base_price, item_type) VALUES
@@ -124,7 +125,8 @@ INSERT INTO Menu_Items (item_name, base_price, item_type) VALUES
 ('Brown Sugar Drizzle', 0.50, 'Addon'),
 ('Honey', 0.50, 'Addon'),
 ('Chia Seeds', 0.65, 'Addon'),
-('Basil Seeds', 0.65, 'Addon');
+('Basil Seeds', 0.65, 'Addon')
+ON CONFLICT (item_name) DO NOTHING;
 
 -- 4. SEED INVENTORY (Ingredients & Supplies)
 INSERT INTO Inventory (item_name, quantity_in_stock, reorder_level) VALUES
@@ -193,13 +195,5 @@ INSERT INTO Inventory (item_name, quantity_in_stock, reorder_level) VALUES
 ('Trash Bags (box)', 10, 2),
 ('Gloves - Latex Free (box)', 20, 4),
 ('Cleaning Detergent (L)', 10, 2),
-('Sanitizer Solution (L)', 10, 2);
-
--- Total Menu Items (Drinks + Addons) = 82 + 27 = 109 items
--- Total Inventory Items = 66 items
--- GRAND TOTAL = 175+ records
-
--- Optional: Link Menu Items to Ingredients (if a junction table named Menu_Item_Ingredients exists)
--- This is a snippet of how it would look:
--- INSERT INTO Menu_Item_Ingredients (menu_item_id, inventory_id, quantity_needed)
--- VALUES ( (SELECT menu_item_id FROM Menu_Items WHERE item_name='Classic Milk Tea'), (SELECT inventory_id FROM Inventory WHERE item_name='Assam Black Tea Leaves (kg)'), 0.02 );
+('Sanitizer Solution (L)', 10, 2)
+ON CONFLICT (item_name) DO NOTHING;
