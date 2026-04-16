@@ -58,6 +58,22 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// PUT update a menu item price specifically (for backward compatibility)
+router.put('/:id/price', async (req, res) => {
+  const { id } = req.params;
+  const { base_price } = req.body;
+  try {
+    await pool.query(
+      'UPDATE Menu_Items SET base_price = $1 WHERE menu_item_id = $2',
+      [base_price, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update price' });
+  }
+});
+
 // POST create a new menu item (manager)
 router.post('/', async (req, res) => {
   const { item_name, base_price, item_type } = req.body;

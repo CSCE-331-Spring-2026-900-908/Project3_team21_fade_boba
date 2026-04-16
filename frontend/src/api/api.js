@@ -81,6 +81,31 @@ export async function updatePrice(menu_item_id, base_price) {
   return res.json();
 }
 
+export async function createMenuItem(item) {
+  const res = await fetch(`${BASE}/menu`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  });
+  return res.json();
+}
+
+export async function updateMenuItem(id, item) {
+  const res = await fetch(`${BASE}/menu/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  });
+  return res.json();
+}
+
+export async function deleteMenuItem(id) {
+  const res = await fetch(`${BASE}/menu/${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
+
 export async function translateTexts(texts, target) {
   const res = await fetch(`${BASE}/translate`, {
     method: 'POST',
