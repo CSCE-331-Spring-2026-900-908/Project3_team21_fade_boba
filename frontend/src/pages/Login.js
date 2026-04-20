@@ -15,6 +15,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [announcement, setAnnouncement] = useState('');
   const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
+  const [showAccessMenu, setShowAccessMenu] = useState(false); // NEW: Toggle state
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
 
@@ -35,14 +36,11 @@ export default function Login() {
     setError('');
 
     try {
-      // 1. Use the helper from your api.js
       const user = await loginEmployee(pin); 
 
-      // 2. Store user data in sessionStorage
       sessionStorage.setItem('user', JSON.stringify(user));
       sessionStorage.setItem('userType', 'employee');
 
-      // 3. Route based on the role returned from the database
       if (user.role === 'Manager') {
         navigate('/manager');
       } else {
@@ -50,7 +48,6 @@ export default function Login() {
       }
     } catch (err) {
       console.error(err);
-      // This catches both "Invalid PIN" and "Server Error"
       setError(err.message || 'Login failed. Please try again.');
     }
   };
@@ -88,13 +85,30 @@ export default function Login() {
         {announcement}
       </p>
 
-      <div style={styles.wrapper}>
-        <AccessibilityToolbar
-          settings={accessibility}
-          onContrastChange={(value) => updateAccessibility({ contrast: value })}
-          onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
-        />
+      {/* --- NEW FLOATING ACCESSIBILITY MENU --- */}
+      <div style={styles.floatingAccessContainer}>
+        <button 
+          style={styles.accessToggleBtn} 
+          onClick={() => setShowAccessMenu(!showAccessMenu)}
+          aria-label="Toggle Accessibility Options"
+          title="Accessibility Options"
+        >
+          ♿
+        </button>
 
+        {showAccessMenu && (
+          <div style={styles.accessDropdown}>
+            <AccessibilityToolbar
+              settings={accessibility}
+              onContrastChange={(value) => updateAccessibility({ contrast: value })}
+              onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
+            />
+          </div>
+        )}
+      </div>
+      {/* --------------------------------------- */}
+
+      <div style={styles.wrapper}>
         <section style={styles.box} aria-labelledby="login-title">
           <h1 style={styles.logo}>🧋 Fade Boba</h1>
           <h2 id="login-title" style={styles.title}>
@@ -115,7 +129,7 @@ export default function Login() {
           <div style={styles.helpBox}>
             <p style={styles.helpTitle}>Keyboard and screen reader support</p>
             <p style={styles.helpText}>
-              Use Tab to move through controls. Use the accessibility settings above for
+              Use Tab to move through controls. Use the accessibility settings menu in the top right for
               high contrast or larger text.
             </p>
           </div>
@@ -162,14 +176,51 @@ const styles = {
     justifyContent: 'center',
     background: 'var(--dark)',
     padding: '24px',
+    position: 'relative', // Ensures absolute positioning works within this container
   },
   wrapper: {
     width: '100%',
-    maxWidth: '720px',
+    maxWidth: '500px', // Shrunk slightly to keep the login box focused
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
+  
+  // --- NEW FLOATING STYLES ---
+  floatingAccessContainer: {
+    position: 'absolute',
+    top: '24px',
+    right: '24px',
+    zIndex: 100,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '10px'
+  },
+  accessToggleBtn: {
+    background: 'var(--dark-card)',
+    border: '1px solid var(--border)',
+    borderRadius: '50%',
+    width: '50px',
+    height: '50px',
+    fontSize: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    color: 'var(--text)'
+  },
+  accessDropdown: {
+    background: 'var(--dark-card)',
+    border: '1px solid var(--border)',
+    borderRadius: '12px',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+    transform: 'scale(0.95)', 
+    transformOrigin: 'top right'
+  },
+  // ---------------------------
+
   box: {
     background: 'var(--dark-card)',
     border: '1px solid var(--border)',
@@ -210,6 +261,7 @@ const styles = {
   },
   helpText: {
     color: 'var(--text-muted)',
+    fontSize: '0.9rem',
   },
   error: {
     color: 'var(--red)',
@@ -224,6 +276,11 @@ const styles = {
   backBtn: {
     background: 'var(--border)',
     color: 'var(--text)',
+    padding: '12px',
+    borderRadius: '10px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    border: 'none',
   },
   pinSection: {
     display: 'flex',
@@ -231,15 +288,14 @@ const styles = {
     gap: '10px',
     marginTop: '10px',
   },
-
   input: {
     padding: '12px',
     borderRadius: '8px',
     border: '1px solid var(--border)',
     background: 'var(--dark)',
     color: 'white',
+    fontSize: '1rem',
   },
-
   pinBtn: {
     background: 'var(--purple)',
     color: 'white',
@@ -247,11 +303,13 @@ const styles = {
     borderRadius: '10px',
     fontWeight: '700',
     cursor: 'pointer',
+    border: 'none',
   },
-
   divider: {
     textAlign: 'center',
     margin: '10px 0',
     color: 'var(--text-muted)',
+    fontSize: '0.9rem',
+    fontWeight: '600',
   },
 };
