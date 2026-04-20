@@ -15,7 +15,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [announcement, setAnnouncement] = useState('');
   const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
-  const [showAccessMenu, setShowAccessMenu] = useState(false); // NEW: Toggle state
+  const [showAccessMenu, setShowAccessMenu] = useState(false);
+  const [isHovered, setIsHovered] = useState(false); 
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
 
@@ -85,19 +86,26 @@ export default function Login() {
         {announcement}
       </p>
 
-      {/* --- NEW FLOATING ACCESSIBILITY MENU --- */}
+      {/* --- FLOATING ACCESSIBILITY MENU --- */}
       <div style={styles.floatingAccessContainer}>
         <button 
-          style={styles.accessToggleBtn} 
+          style={{
+            ...styles.accessToggleBtn,
+            // Slightly smaller scale since the button is wider now
+            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+            background: isHovered ? 'var(--surface-muted)' : 'var(--dark-card)',
+          }}
           onClick={() => setShowAccessMenu(!showAccessMenu)}
-          aria-label="Toggle Accessibility Options"
-          title="Accessibility Options"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          aria-expanded={showAccessMenu}
+          aria-controls="accessibility-dropdown"
         >
-          ♿
+          <span style={{ fontSize: '20px' }}>♿</span> Accessibility
         </button>
 
         {showAccessMenu && (
-          <div style={styles.accessDropdown}>
+          <div id="accessibility-dropdown" style={styles.accessDropdown}>
             <AccessibilityToolbar
               settings={accessibility}
               onContrastChange={(value) => updateAccessibility({ contrast: value })}
@@ -129,7 +137,7 @@ export default function Login() {
           <div style={styles.helpBox}>
             <p style={styles.helpTitle}>Keyboard and screen reader support</p>
             <p style={styles.helpText}>
-              Use Tab to move through controls. Use the accessibility settings menu in the top right for
+              Use Tab to move through controls. Use the Accessibility menu in the top right for
               high contrast or larger text.
             </p>
           </div>
@@ -176,19 +184,19 @@ const styles = {
     justifyContent: 'center',
     background: 'var(--dark)',
     padding: '24px',
-    position: 'relative', // Ensures absolute positioning works within this container
+    position: 'relative', 
   },
   wrapper: {
     width: '100%',
-    maxWidth: '500px', // Shrunk slightly to keep the login box focused
+    maxWidth: '500px', 
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
   
-  // --- NEW FLOATING STYLES ---
+  // --- UPDATED FLOATING STYLES ---
   floatingAccessContainer: {
-    position: 'absolute',
+    position: 'fixed', 
     top: '24px',
     right: '24px',
     zIndex: 100,
@@ -200,16 +208,19 @@ const styles = {
   accessToggleBtn: {
     background: 'var(--dark-card)',
     border: '1px solid var(--border)',
-    borderRadius: '50%',
-    width: '50px',
+    borderRadius: '25px', // CHANGED: Pill shape instead of a circle
+    padding: '10px 18px', // NEW: Horizontal padding for the text
     height: '50px',
-    fontSize: '24px',
+    fontSize: '15px',     // NEW: Font size for the text
+    fontWeight: '600',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: '8px',           // NEW: Space between icon and text
     cursor: 'pointer',
     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    color: 'var(--text)'
+    color: 'var(--text)',
+    transition: 'all 0.2s ease', 
   },
   accessDropdown: {
     background: 'var(--dark-card)',
