@@ -64,12 +64,12 @@ export default function AccessibilityWidget() {
 const styles = {
   floatingAccessContainer: {
     position: 'fixed', 
-    top: '24px',
-    right: '24px',
+    bottom: '24px',
+    left: '24px',
     zIndex: 9999, // Ensure it's above everything across all pages
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+    flexDirection: 'column-reverse',
+    alignItems: 'flex-start',
     gap: '10px'
   },
   accessToggleBtn: {
@@ -93,8 +93,8 @@ const styles = {
     background: 'var(--dark-card)',
     border: '1px solid var(--border)',
     borderRadius: '12px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+    boxShadow: '0 -8px 24px rgba(0,0,0,0.4)',
     transform: 'scale(0.95)', 
-    transformOrigin: 'top right'
+    transformOrigin: 'bottom left'
   },
 };

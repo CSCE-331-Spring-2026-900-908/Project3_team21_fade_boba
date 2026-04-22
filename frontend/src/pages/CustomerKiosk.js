@@ -2,13 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAddons, fetchDrinks, placeOrder, translateTexts } from '../api/api';
 import ReceiptModal from '../components/ReceiptModal';
-import AccessibilityToolbar from '../components/AccessibilityToolbar';
-import {
-  getContrastAnnouncement,
-  getTextSizeAnnouncement,
-  readAccessibilitySettings,
-  updateAccessibilitySettings,
-} from '../utils/accessibility';
+
 import AcceptanceCriteria from '../components/AcceptanceCriteria';
 import bobaImg from '../images/boba_test.png';
 
@@ -118,7 +112,6 @@ export default function CustomerKiosk() {
   const [translatedNames, setTranslatedNames] = useState({ drinks: {}, addons: {} });
   const [isTranslating, setIsTranslating] = useState(false);
   const [announcement, setAnnouncement] = useState('');
-  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
 
   const navigate = useNavigate();
   const modalRef = useRef(null);
@@ -240,17 +233,7 @@ export default function CustomerKiosk() {
   const getDrinkName = (drink) => translatedNames.drinks[drink.menu_item_id] || drink.item_name;
   const getAddonName = (addon) => translatedNames.addons[addon.menu_item_id] || addon.item_name;
 
-  const updateAccessibility = (updates) => {
-    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
-    setAccessibility(next);
 
-    if (updates.contrast) {
-      setAnnouncement(getContrastAnnouncement(next.contrast));
-    }
-    if (updates.textSize) {
-      setAnnouncement(getTextSizeAnnouncement(next.textSize));
-    }
-  };
 
   const closeModal = () => {
     setModal(null);
@@ -384,15 +367,7 @@ export default function CustomerKiosk() {
     setScreen('confirm');
   };
 
-  const handleLanguageChange = (event) => {
-    const nextLanguage = event.target.value;
-    setLanguage(nextLanguage);
 
-    const selected = LANGUAGES.find((option) => option.code === nextLanguage);
-    if (selected) {
-      setAnnouncement(`Language changed to ${selected.label}.`);
-    }
-  };
 
   if (screen === 'confirm') {
     return (
@@ -464,22 +439,7 @@ export default function CustomerKiosk() {
         </div>
 
         <div style={styles.headerControls}>
-          <label htmlFor="kiosk-language" className="sr-only">
-            {uiText.language}
-          </label>
-          <select
-            id="kiosk-language"
-            value={language}
-            onChange={handleLanguageChange}
-            style={styles.languageSelect}
-            aria-label={uiText.language}
-          >
-            {LANGUAGES.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+
 
           {weather && (
             <div
@@ -521,19 +481,7 @@ export default function CustomerKiosk() {
         </div>
       </header>
 
-      <div style={styles.topPanel}>
-        <AccessibilityToolbar
-          settings={accessibility}
-          onContrastChange={(value) => updateAccessibility({ contrast: value })}
-          onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
-          compact
-        />
 
-        <section style={styles.helpBox} aria-label="Accessibility help">
-          <h2 style={styles.helpTitle}>Kiosk help</h2>
-          <p style={styles.helpText}>{uiText.accessibilityHelp}</p>
-        </section>
-      </div>
 
       {weather && screen === 'menu' && (
         <div style={styles.suggestionBanner} role="status" aria-live="polite">
@@ -903,25 +851,7 @@ const styles = {
     fontSize: '0.82rem',
     color: 'var(--text-muted)',
   },
-  topPanel: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(300px, 1.2fr) minmax(260px, 0.8fr)',
-    gap: '20px',
-    padding: '20px 32px 0',
-  },
-  helpBox: {
-    background: 'var(--dark-card)',
-    border: '1px solid var(--border)',
-    borderRadius: '12px',
-    padding: '16px',
-  },
-  helpTitle: {
-    fontWeight: 700,
-    marginBottom: '6px',
-  },
-  helpText: {
-    color: 'var(--text-muted)',
-  },
+
   suggestionBanner: {
     background: 'var(--purple)',
     color: 'white',

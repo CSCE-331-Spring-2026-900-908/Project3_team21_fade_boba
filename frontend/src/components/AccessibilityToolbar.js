@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   CONTRAST_OPTIONS,
   TEXT_SIZE_OPTIONS,
 } from '../utils/accessibility';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'zh-CN', label: '中文' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'ko', label: '한국어' },
+];
 
 export default function AccessibilityToolbar({
   settings,
@@ -10,6 +18,17 @@ export default function AccessibilityToolbar({
   onTextSizeChange,
   compact = false,
 }) {
+  const [language, setLanguage] = useState('en');
+
+  const handleLanguageChange = (event) => {
+    const nextLang = event.target.value;
+    setLanguage(nextLang);
+    const selectElement = document.querySelector('.goog-te-combo');
+    if (selectElement) {
+      selectElement.value = nextLang;
+      selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
   return (
     <section
       className="card accessibility-toolbar"
@@ -58,6 +77,22 @@ export default function AccessibilityToolbar({
               </button>
             ))}
           </div>
+        </div>
+
+        <div style={groupStyle}>
+          <span style={groupLabelStyle}>Language</span>
+          <select 
+            value={language} 
+            onChange={handleLanguageChange}
+            style={selectStyle}
+            aria-label="Select Language"
+          >
+            {LANGUAGES.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -137,4 +172,16 @@ const helpTitleStyle = {
 const helpTextStyle = {
   color: 'var(--text-muted)',
   fontSize: '0.85rem',
+};
+
+const selectStyle = {
+  padding: '10px',
+  borderRadius: '8px',
+  border: '1px solid var(--border)',
+  background: 'var(--dark-card)',
+  color: 'var(--text)',
+  fontSize: '1rem',
+  cursor: 'pointer',
+  width: '100%',
+  maxWidth: '200px'
 };
