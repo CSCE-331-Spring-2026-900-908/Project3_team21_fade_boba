@@ -9,6 +9,7 @@ import {
   readAccessibilitySettings,
   updateAccessibilitySettings,
 } from '../utils/accessibility';
+import AcceptanceCriteria from '../components/AcceptanceCriteria';
 import bobaImg from '../images/boba_test.png';
 
 const KIOSK_EMPLOYEE_ID = 1;
@@ -437,6 +438,7 @@ export default function CustomerKiosk() {
           </button>
         </div>
         {receiptData && <ReceiptModal order={receiptData} onClose={() => setReceiptData(null)} />}
+        <AcceptanceCriteria view="kiosk" />
       </main>
     );
   }
@@ -832,6 +834,7 @@ export default function CustomerKiosk() {
           </div>
         </div>
       )}
+      <AcceptanceCriteria view="kiosk" />
     </main>
   );
 }
