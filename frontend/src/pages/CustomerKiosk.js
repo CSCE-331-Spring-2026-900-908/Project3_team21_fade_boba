@@ -2,8 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAddons, fetchDrinks, placeOrder, translateTexts } from '../api/api';
 import ReceiptModal from '../components/ReceiptModal';
-
-import AcceptanceCriteria from '../components/AcceptanceCriteria';
+import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import {
+  getContrastAnnouncement,
+  getTextSizeAnnouncement,
+  readAccessibilitySettings,
+  updateAccessibilitySettings,
+} from '../utils/accessibility';
 import bobaImg from '../images/boba_test.png';
 
 const KIOSK_EMPLOYEE_ID = 1;
@@ -439,7 +444,6 @@ export default function CustomerKiosk() {
           </button>
         </div>
         {receiptData && <ReceiptModal order={receiptData} onClose={() => setReceiptData(null)} />}
-        <AcceptanceCriteria view="kiosk" />
       </main>
     );
   }
@@ -824,7 +828,6 @@ export default function CustomerKiosk() {
           </div>
         </div>
       )}
-      <AcceptanceCriteria view="kiosk" />
     </main>
   );
 }
