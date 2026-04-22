@@ -60,6 +60,14 @@ export default function AccessibilityToolbar({
           </div>
         </div>
       </div>
+
+      <div style={helpBoxStyle}>
+        <p style={helpTitleStyle}>Keyboard and screen reader support</p>
+        <p style={helpTextStyle}>
+          Use Tab to move through controls. High contrast and large text 
+          settings are automatically announced to screen readers.
+        </p>
+      </div>
     </section>
   );
 }
@@ -110,4 +118,23 @@ const buttonRowStyle = {
   display: 'flex',
   flexWrap: 'wrap',
   gap: '8px',
+};
+
+const helpBoxStyle = {
+  background: 'var(--surface-muted)',
+  border: '1px solid var(--border)',
+  borderRadius: '10px',
+  padding: '12px 14px',
+  marginTop: '20px',
+};
+
+const helpTitleStyle = {
+  fontWeight: 700,
+  marginBottom: '4px',
+  fontSize: '0.95rem',
+};
+
+const helpTextStyle = {
+  color: 'var(--text-muted)',
+  fontSize: '0.85rem',
 };

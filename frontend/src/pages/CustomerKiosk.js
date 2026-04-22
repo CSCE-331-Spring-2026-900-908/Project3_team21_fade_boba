@@ -159,7 +159,7 @@ export default function CustomerKiosk() {
           code: current.weathercode,
           wind: Math.round(current.windspeed),
         });
-        setRecommended(getRecommendedDrink(temp)); 
+        setRecommended(getRecommendedDrink(temp));
       })
       .catch(() => setWeather(null));
   }, []);
@@ -619,9 +619,8 @@ export default function CustomerKiosk() {
                     type="button"
                     style={styles.favoriteButton}
                     onClick={() => toggleFavorite(drink.menu_item_id)}
-                    aria-label={`${isFavorite ? 'Remove' : 'Add'} ${getDrinkName(drink)} ${
-                      isFavorite ? 'from' : 'to'
-                    } favorites`}
+                    aria-label={`${isFavorite ? 'Remove' : 'Add'} ${getDrinkName(drink)} ${isFavorite ? 'from' : 'to'
+                      } favorites`}
                   >
                     {isFavorite ? '❤️' : '🤍'}
                   </button>
@@ -1151,18 +1150,18 @@ const styles = {
     gap: '12px',
     flexWrap: 'wrap',
   },
-  recBadge: { 
-  background: '#F59E0B', 
-  color: '#000', 
-  fontSize: '11px', 
-  fontWeight: 800, 
-  padding: '3px 10px', 
-  borderRadius: '99px', 
-  marginBottom: '4px' 
+  recBadge: {
+    background: '#F59E0B',
+    color: '#000',
+    fontSize: '11px',
+    fontWeight: 800,
+    padding: '3px 10px',
+    borderRadius: '99px',
+    marginBottom: '4px'
   },
   drinkImage: {
-  width: '70px',
-  height: '70px',
-  objectFit: 'contain',
+    width: '70px',
+    height: '70px',
+    objectFit: 'contain',
   },
 };

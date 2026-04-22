@@ -3,34 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { verifyGoogleToken } from '../api/api';
 import { loginEmployee } from '../api/api';
-import AccessibilityToolbar from '../components/AccessibilityToolbar';
-import {
-  getContrastAnnouncement,
-  getTextSizeAnnouncement,
-  readAccessibilitySettings,
-  updateAccessibilitySettings,
-} from '../utils/accessibility';
 
 export default function Login() {
   const [error, setError] = useState('');
-  const [announcement, setAnnouncement] = useState('');
-  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
-  const [showAccessMenu, setShowAccessMenu] = useState(false);
-  const [isHovered, setIsHovered] = useState(false); 
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
-
-  const updateAccessibility = (updates) => {
-    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
-    setAccessibility(next);
-
-    if (updates.contrast) {
-      setAnnouncement(getContrastAnnouncement(next.contrast));
-    }
-    if (updates.textSize) {
-      setAnnouncement(getTextSizeAnnouncement(next.textSize));
-    }
-  };
 
   const handlePinLogin = async () => {
     if (!pin.trim()) return setError('Please enter a PIN.');
@@ -82,40 +59,6 @@ export default function Login() {
 
   return (
     <main style={styles.bg} id="main-content">
-      <p className="sr-only" aria-live="polite">
-        {announcement}
-      </p>
-
-      {/* --- FLOATING ACCESSIBILITY MENU --- */}
-      <div style={styles.floatingAccessContainer}>
-        <button 
-          style={{
-            ...styles.accessToggleBtn,
-            // Slightly smaller scale since the button is wider now
-            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-            background: isHovered ? 'var(--surface-muted)' : 'var(--dark-card)',
-          }}
-          onClick={() => setShowAccessMenu(!showAccessMenu)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          aria-expanded={showAccessMenu}
-          aria-controls="accessibility-dropdown"
-        >
-          <span style={{ fontSize: '20px' }}>♿</span> Accessibility
-        </button>
-
-        {showAccessMenu && (
-          <div id="accessibility-dropdown" style={styles.accessDropdown}>
-            <AccessibilityToolbar
-              settings={accessibility}
-              onContrastChange={(value) => updateAccessibility({ contrast: value })}
-              onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
-            />
-          </div>
-        )}
-      </div>
-      {/* --------------------------------------- */}
-
       <div style={styles.wrapper}>
         <section style={styles.box} aria-labelledby="login-title">
           <h1 style={styles.logo}>🧋 Fade Boba</h1>
@@ -134,13 +77,7 @@ export default function Login() {
             </p>
           )}
 
-          <div style={styles.helpBox}>
-            <p style={styles.helpTitle}>Keyboard and screen reader support</p>
-            <p style={styles.helpText}>
-              Use Tab to move through controls. Use the Accessibility menu in the top right for
-              high contrast or larger text.
-            </p>
-          </div>
+
 
           <div style={styles.pinSection}>
             <input
@@ -193,44 +130,6 @@ const styles = {
     flexDirection: 'column',
     gap: '20px',
   },
-  
-  // --- UPDATED FLOATING STYLES ---
-  floatingAccessContainer: {
-    position: 'fixed', 
-    top: '24px',
-    right: '24px',
-    zIndex: 100,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '10px'
-  },
-  accessToggleBtn: {
-    background: 'var(--dark-card)',
-    border: '1px solid var(--border)',
-    borderRadius: '25px', // CHANGED: Pill shape instead of a circle
-    padding: '10px 18px', // NEW: Horizontal padding for the text
-    height: '50px',
-    fontSize: '15px',     // NEW: Font size for the text
-    fontWeight: '600',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',           // NEW: Space between icon and text
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    color: 'var(--text)',
-    transition: 'all 0.2s ease', 
-  },
-  accessDropdown: {
-    background: 'var(--dark-card)',
-    border: '1px solid var(--border)',
-    borderRadius: '12px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-    transform: 'scale(0.95)', 
-    transformOrigin: 'top right'
-  },
-  // ---------------------------
 
   box: {
     background: 'var(--dark-card)',
@@ -260,20 +159,7 @@ const styles = {
     color: 'var(--text-muted)',
     marginBottom: '6px',
   },
-  helpBox: {
-    background: 'var(--surface-muted)',
-    border: '1px solid var(--border)',
-    borderRadius: '12px',
-    padding: '14px 16px',
-  },
-  helpTitle: {
-    fontWeight: 700,
-    marginBottom: '4px',
-  },
-  helpText: {
-    color: 'var(--text-muted)',
-    fontSize: '0.9rem',
-  },
+
   error: {
     color: 'var(--red)',
     fontSize: '0.95rem',

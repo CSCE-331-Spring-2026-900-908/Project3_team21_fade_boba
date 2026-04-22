@@ -10,10 +10,12 @@ import CustomerKiosk from './pages/CustomerKiosk';
 import MenuBoard    from './pages/MenuBoard';
 import NotFound     from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
+import AccessibilityWidget from './components/AccessibilityWidget';
 
 export default function App() {
   return (
     <ErrorBoundary>
+      <AccessibilityWidget />
       <BrowserRouter>
         <Routes>
           {/* Portal - links to all views */}
