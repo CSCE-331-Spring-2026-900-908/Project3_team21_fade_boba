@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchLowStock, fetchOrders, fetchOrderSummary, fetchInventory, restockItem, fetchMenu, updatePrice } from '../api/api';
 import { useNavigate } from 'react-router-dom';
-import AccessibilityToolbar from '../components/AccessibilityToolbar';
-import {
-  getContrastAnnouncement,
-  getTextSizeAnnouncement,
-  readAccessibilitySettings,
-  updateAccessibilitySettings,
-} from '../utils/accessibility';
+
 
 function formatTime(value) {
   return new Date(value).toLocaleTimeString([], {
@@ -25,7 +19,6 @@ export default function Manager() {
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState('');
   const [announcement, setAnnouncement] = useState('');
-  const [accessibility, setAccessibility] = useState(() => readAccessibilitySettings());
   const [inventory, setInventory] = useState([]);
   const [menu, setMenu] = useState([]);
   const [restockAmt, setRestockAmt] = useState({});
@@ -40,17 +33,7 @@ export default function Manager() {
     }
   }, []);
 
-  const updateAccessibility = (updates) => {
-    const next = updateAccessibilitySettings({ ...accessibility, ...updates });
-    setAccessibility(next);
 
-    if (updates.contrast) {
-      setAnnouncement(getContrastAnnouncement(next.contrast));
-    }
-    if (updates.textSize) {
-      setAnnouncement(getTextSizeAnnouncement(next.textSize));
-    }
-  };
 
   const loadData = useCallback(
     async (announceRefresh = false) => {
@@ -178,25 +161,13 @@ export default function Manager() {
           : 'Dashboard has not been refreshed yet.'}
       </p>
 
-      <AccessibilityToolbar
-        settings={accessibility}
-        onContrastChange={(value) => updateAccessibility({ contrast: value })}
-        onTextSizeChange={(value) => updateAccessibility({ textSize: value })}
-      />
-
       {error && (
         <div style={styles.errorBanner} role="alert">
           {error}
         </div>
       )}
 
-      <section style={styles.helpBox} aria-label="Keyboard support">
-        <p style={styles.helpTitle}>Keyboard support</p>
-        <p style={styles.helpText}>
-          Use Tab to move through refresh, navigation, tables, and dashboard controls.
-          This view uses native buttons and labeled tables for keyboard and screen reader use.
-        </p>
-      </section>
+
 
       <section style={styles.metricsGrid} aria-label="Manager summary metrics">
         <div style={styles.metricCard}>
@@ -471,19 +442,6 @@ const styles = {
   secondaryButton: {
     background: 'var(--border)',
     color: 'var(--text)',
-  },
-  helpBox: {
-    background: 'var(--surface-muted)',
-    border: '1px solid var(--border)',
-    borderRadius: '12px',
-    padding: '14px 16px',
-  },
-  helpTitle: {
-    fontWeight: 700,
-    marginBottom: '4px',
-  },
-  helpText: {
-    color: 'var(--text-muted)',
   },
   errorBanner: {
     background: 'rgba(248, 113, 113, 0.14)',

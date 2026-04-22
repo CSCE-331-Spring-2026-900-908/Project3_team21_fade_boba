@@ -84,6 +84,26 @@ function sortDrinks(drinks, recommendedName) {
   });
 }
 
+function getDrinkCategory(drink) {
+  const name = (drink.item_name || '').toLowerCase();
+  if (name.includes('milk tea')) return 'Milk Tea';
+  if (name.includes('fruit tea')) return 'Fruit Tea';
+  if (name.includes('smoothie')) return 'Smoothie';
+  if (name.includes('slush')) return 'Slush';
+  if (name.includes('brewed')) return 'Brewed Tea';
+  return 'Specialty Drinks';
+}
+
+const CATEGORIES = [
+  'All',
+  'Milk Tea',
+  'Fruit Tea',
+  'Smoothie',
+  'Slush',
+  'Specialty Drinks',
+  'Brewed Tea'
+];
+
 function getFocusableElements(container) {
   if (!container) return [];
 
@@ -112,6 +132,7 @@ export default function CustomerKiosk() {
   const [translatedNames, setTranslatedNames] = useState({ drinks: {}, addons: {} });
   const [isTranslating, setIsTranslating] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const navigate = useNavigate();
   const modalRef = useRef(null);
@@ -224,6 +245,11 @@ export default function CustomerKiosk() {
   );
 
   const sortedDrinks = recommended ? sortDrinks(drinks, recommended) : drinks;
+
+  const displayedDrinks = useMemo(() => {
+    if (selectedCategory === 'All') return sortedDrinks;
+    return sortedDrinks.filter(drink => getDrinkCategory(drink) === selectedCategory);
+  }, [sortedDrinks, selectedCategory]);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + parseFloat(item.sale_price), 0),
@@ -529,8 +555,25 @@ export default function CustomerKiosk() {
             </>
           )}
 
+          <div style={styles.tabsContainer} role="tablist" aria-label="Drink Categories">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                role="tab"
+                aria-selected={selectedCategory === cat}
+                style={{
+                  ...styles.tabButton,
+                  ...(selectedCategory === cat ? styles.activeTab : {})
+                }}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           <div style={styles.menuGrid}>
-            {sortedDrinks.map((drink) => {
+            {displayedDrinks.map((drink) => {
               const isFavorite = favorites.includes(drink.menu_item_id);
               const isRec = drink.item_name === recommended;
               return (
@@ -1094,4 +1137,30 @@ const styles = {
     height: '70px',
     objectFit: 'contain',
   },
+  tabsContainer: {
+    display: 'flex',
+    gap: '12px',
+    paddingBottom: '16px',
+    marginBottom: '24px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  tabButton: {
+    padding: '10px 20px',
+    borderRadius: '20px',
+    border: 'none',
+    boxShadow: 'inset 0 0 0 2px var(--border)',
+    background: 'var(--dark-card)',
+    color: 'var(--text-muted)',
+    fontSize: '1rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s',
+  },
+  activeTab: {
+    background: 'var(--purple)',
+    color: 'white',
+    boxShadow: 'inset 0 0 0 2px var(--purple)',
+  }
 };

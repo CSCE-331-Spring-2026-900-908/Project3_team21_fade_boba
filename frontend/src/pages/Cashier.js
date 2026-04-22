@@ -4,20 +4,45 @@ import { useNavigate } from 'react-router-dom';
 import { fetchDrinks, fetchAddons, placeOrder } from '../api/api';
 import ReceiptModal from '../components/ReceiptModal';
 
-export default function Cashier() {
-  const navigate  = useNavigate();
-  const employee  = JSON.parse(sessionStorage.getItem('user') || 'null');
+const CATEGORIES = [
+  'All',
+  'Milk Tea',
+  'Fruit Tea',
+  'Smoothie',
+  'Slush',
+  'Specialty Drinks',
+  'Brewed Tea'
+];
 
-  const [drinks,  setDrinks]  = useState([]);
-  const [addons,  setAddons]  = useState([]);
-  const [cart,    setCart]    = useState([]);
-  const [modal,   setModal]   = useState(null);   // drink being customized
+function getDrinkCategory(drink) {
+  const name = (drink.item_name || '').toLowerCase();
+  if (name.includes('milk tea')) return 'Milk Tea';
+  if (name.includes('fruit tea')) return 'Fruit Tea';
+  if (name.includes('smoothie')) return 'Smoothie';
+  if (name.includes('slush')) return 'Slush';
+  if (name.includes('brewed')) return 'Brewed Tea';
+  return 'Specialty Drinks';
+}
+
+export default function Cashier() {
+  const navigate = useNavigate();
+  const employee = JSON.parse(sessionStorage.getItem('user') || 'null');
+
+  const [drinks, setDrinks] = useState([]);
+  const [addons, setAddons] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [modal, setModal] = useState(null);   // drink being customized
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [iceLevel, setIceLevel] = useState('100%');
   const [sugarLevel, setSugarLevel] = useState('100%');
   const [message, setMessage] = useState('');
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const displayedDrinks = selectedCategory === 'All'
+    ? drinks
+    : drinks.filter(d => getDrinkCategory(d) === selectedCategory);
 
   useEffect(() => {
     if (!employee || employee.role !== 'Cashier') {
@@ -92,8 +117,22 @@ export default function Cashier() {
         <div style={styles.header}>
           <span>🧋 Fade Boba — Cashier: {employee?.first_name}</span>
         </div>
+        <div style={styles.tabsContainer}>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              style={{
+                ...styles.tabButton,
+                ...(selectedCategory === cat ? styles.activeTab : {})
+              }}
+              onClick={() => setSelectedCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
         <div style={styles.grid}>
-          {drinks.map((d) => (
+          {displayedDrinks.map((d) => (
             <button key={d.menu_item_id} style={styles.drinkBtn} onClick={() => openCustomize(d)}>
               <span style={styles.drinkName}>{d.item_name}</span>
               <span style={styles.drinkPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
@@ -135,7 +174,7 @@ export default function Cashier() {
         <button style={styles.checkoutBtn} onClick={checkout} disabled={cart.length === 0}>
           Checkout
         </button>
-        
+
         {receiptData && (
           <button style={{ ...styles.checkoutBtn, background: 'var(--blue)', marginTop: '8px' }} onClick={() => setShowReceiptModal(true)}>
             📄 View Last Receipt
@@ -154,14 +193,14 @@ export default function Cashier() {
             <p style={{ fontWeight: 600, marginBottom: '6px' }}>Ice Level:</p>
             <div style={styles.levelGroup}>
               {['0%', '50%', '100%'].map(lvl => (
-                <button key={'ice'+lvl} style={{...styles.levelBtn, background: iceLevel === lvl ? 'var(--blue)' : 'var(--border)'}} onClick={() => setIceLevel(lvl)}>{lvl}</button>
+                <button key={'ice' + lvl} style={{ ...styles.levelBtn, background: iceLevel === lvl ? 'var(--blue)' : 'var(--border)' }} onClick={() => setIceLevel(lvl)}>{lvl}</button>
               ))}
             </div>
 
             <p style={{ fontWeight: 600, marginBottom: '6px', marginTop: '10px' }}>Sugar Level:</p>
             <div style={styles.levelGroup}>
               {['0%', '50%', '100%'].map(lvl => (
-                <button key={'sug'+lvl} style={{...styles.levelBtn, background: sugarLevel === lvl ? 'var(--pink)' : 'var(--border)'}} onClick={() => setSugarLevel(lvl)}>{lvl}</button>
+                <button key={'sug' + lvl} style={{ ...styles.levelBtn, background: sugarLevel === lvl ? 'var(--pink)' : 'var(--border)' }} onClick={() => setSugarLevel(lvl)}>{lvl}</button>
               ))}
             </div>
 
@@ -197,27 +236,52 @@ export default function Cashier() {
 }
 
 const styles = {
-  layout:      { display: 'flex', height: '100vh', background: 'var(--dark)' },
-  menu:        { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  header:      { padding: '16px 24px', background: 'var(--dark-card)', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '18px' },
-  grid:        { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '20px', overflowY: 'auto' },
-  drinkBtn:    { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', cursor: 'pointer', textAlign: 'left' },
-  drinkName:   { fontWeight: 600, color: 'var(--text)', fontSize: '14px' },
-  drinkPrice:  { color: 'var(--pink)', fontWeight: 700 },
-  cart:        { width: '300px', background: 'var(--dark-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '20px', gap: '12px' },
-  cartTitle:   { fontWeight: 700, fontSize: '18px' },
-  cartItems:   { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' },
-  empty:       { color: 'var(--text-muted)', fontSize: '13px' },
-  cartItem:    { background: 'var(--dark)', borderRadius: '8px', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  addonLine:   { fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' },
-  cartRight:   { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' },
-  removeBtn:   { background: 'var(--red)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', cursor: 'pointer' },
-  totalRow:    { display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700, borderTop: '1px solid var(--border)', paddingTop: '12px' },
+  layout: { display: 'flex', height: '100vh', background: 'var(--dark)' },
+  menu: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  header: { padding: '16px 24px', background: 'var(--dark-card)', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '18px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '20px', overflowY: 'auto' },
+  drinkBtn: { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', cursor: 'pointer', textAlign: 'left' },
+  drinkName: { fontWeight: 600, color: 'var(--text)', fontSize: '14px' },
+  drinkPrice: { color: 'var(--pink)', fontWeight: 700 },
+  cart: { width: '300px', background: 'var(--dark-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '20px', gap: '12px' },
+  cartTitle: { fontWeight: 700, fontSize: '18px' },
+  cartItems: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' },
+  empty: { color: 'var(--text-muted)', fontSize: '13px' },
+  cartItem: { background: 'var(--dark)', borderRadius: '8px', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  addonLine: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' },
+  cartRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' },
+  removeBtn: { background: 'var(--red)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', cursor: 'pointer' },
+  totalRow: { display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700, borderTop: '1px solid var(--border)', paddingTop: '12px' },
   checkoutBtn: { background: 'var(--purple)', color: 'white', border: 'none', borderRadius: '10px', padding: '14px', fontWeight: 700, fontSize: '16px', cursor: 'pointer', width: '100%' },
-  overlay:     { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
-  modalBox:    { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', width: '380px' },
-  levelGroup:  { display: 'flex', gap: '8px' },
-  levelBtn:    { flex: 1, border: 'none', borderRadius: '8px', padding: '8px', color: 'white', cursor: 'pointer', fontWeight: 600 },
-  addonList:   { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' },
-  addonBtn:    { border: 'none', borderRadius: '8px', padding: '10px 14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: 600 },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99 },
+  modalBox: { background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', width: '380px' },
+  levelGroup: { display: 'flex', gap: '8px' },
+  levelBtn: { flex: 1, border: 'none', borderRadius: '8px', padding: '8px', color: 'white', cursor: 'pointer', fontWeight: 600 },
+  addonList: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' },
+  addonBtn: { border: 'none', borderRadius: '8px', padding: '10px 14px', color: 'white', cursor: 'pointer', textAlign: 'left', fontWeight: 600 },
+  tabsContainer: {
+    display: 'flex',
+    gap: '12px',
+    padding: '16px 20px 0 20px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  tabButton: {
+    padding: '8px 16px',
+    borderRadius: '20px',
+    border: 'none',
+    boxShadow: 'inset 0 0 0 2px var(--border)',
+    background: 'var(--dark-card)',
+    color: 'var(--text-muted)',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s',
+  },
+  activeTab: {
+    background: 'var(--purple)',
+    color: 'white',
+    boxShadow: 'inset 0 0 0 2px var(--purple)',
+  }
 };
