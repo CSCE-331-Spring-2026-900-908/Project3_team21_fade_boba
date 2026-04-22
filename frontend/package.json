@@ -13,7 +13,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build"
   },
-  "proxy": "https://project3-team21-fade-boba.onrender.com",
+
   "browserslist": {
     "production": [
       ">0.2%",
