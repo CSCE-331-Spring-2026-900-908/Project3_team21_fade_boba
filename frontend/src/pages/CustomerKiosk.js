@@ -817,7 +817,7 @@ export default function CustomerKiosk() {
               })}
             </div>
 
-            <div style={styles.modalButtons}>
+            <div style={styles.modalFooter}>
               <button
                 ref={modalCancelRef}
                 style={{ ...styles.bigBtn, flex: 1, background: 'var(--border)' }}
@@ -1108,7 +1108,7 @@ const styles = {
     fontWeight: 600,
     fontSize: '0.92rem',
   },
-  modalButtons: {
+  modalFooter: {
     display: 'flex',
     gap: '12px',
     marginTop: '24px',
