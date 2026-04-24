@@ -84,6 +84,11 @@ export default function Cashier() {
 
   const total = cart.reduce((s, i) => s + parseFloat(i.sale_price), 0);
 
+  const handleSignOut = () => {
+    sessionStorage.clear();
+    navigate('/login');
+  };
+
   const checkout = async () => {
     if (cart.length === 0) return;
     try {
@@ -116,7 +121,17 @@ export default function Cashier() {
       <div style={styles.menu}>
         <div style={styles.header}>
           <span>🧋 Fade Boba — Cashier: {employee?.first_name}</span>
+
+          <div style={styles.headerActions}>
+            <button style={styles.secondaryButton} onClick={() => navigate('/')}>
+              Portal
+            </button>
+            <button style={styles.primaryButton} onClick={handleSignOut}>
+              Sign Out
+            </button>
+          </div>
         </div>
+
         <div style={styles.tabsContainer}>
           {CATEGORIES.map(cat => (
             <button
@@ -283,5 +298,40 @@ const styles = {
     background: 'var(--purple)',
     color: 'white',
     boxShadow: 'inset 0 0 0 2px var(--purple)',
+  },
+  header: {
+    padding: '16px 24px',
+    background: 'var(--dark-card)',
+    borderBottom: '1px solid var(--border)',
+    fontWeight: 700,
+    fontSize: '18px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  headerActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+
+  primaryButton: {
+    background: 'var(--purple)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+
+  secondaryButton: {
+    background: 'var(--border)',
+    color: 'var(--text)',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontWeight: 600,
   }
 };
