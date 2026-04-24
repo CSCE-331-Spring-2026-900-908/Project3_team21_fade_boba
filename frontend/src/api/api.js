@@ -134,3 +134,13 @@ export const verifyGoogleToken = async (token) => {
     throw error;
   }
 };
+
+export async function sendChatbotMessage(message, history) {
+  const res = await fetch(`${BASE}/chatbot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!res.ok) throw new Error('Chatbot request failed');
+  return res.json();
+}

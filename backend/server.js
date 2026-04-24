@@ -12,6 +12,7 @@ const inventoryRoutes = require('./routes/inventory');
 const employeesRoutes = require('./routes/employees');
 const authRoutes = require('./routes/auth');
 const translateRoutes = require('./routes/translate');
+const chatbotRoutes = require('./routes/chatbot');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/translate', translateRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health Check Endpoint (Improved)
 app.get('/api/health', async (req, res) => {

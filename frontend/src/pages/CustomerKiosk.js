@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchAddons, fetchDrinks, placeOrder, translateTexts } from '../api/api';
 import ReceiptModal from '../components/ReceiptModal';
 import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import ChatbotWidget from '../components/ChatbotWidget';
 import {
   getContrastAnnouncement,
   getTextSizeAnnouncement,
@@ -444,6 +445,7 @@ export default function CustomerKiosk() {
           </button>
         </div>
         {receiptData && <ReceiptModal order={receiptData} onClose={() => setReceiptData(null)} />}
+        <ChatbotWidget />
       </main>
     );
   }
@@ -828,6 +830,7 @@ export default function CustomerKiosk() {
           </div>
         </div>
       )}
+      <ChatbotWidget />
     </main>
   );
 }
