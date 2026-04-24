@@ -15,7 +15,7 @@ export default function Portal() {
   return (
     <div style={styles.bg}>
       <div style={styles.container}>
-        <h1 style={styles.logo}>🧋 Fade Boba</h1>
+        <h1 style={styles.logo}>Fade Boba</h1>
         <p style={styles.sub}>Select a view to continue</p>
 
         <div style={styles.grid}>

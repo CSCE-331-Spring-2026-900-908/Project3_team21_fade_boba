@@ -117,7 +117,7 @@ export default function Manager() {
     return (
       <main style={styles.centered} id="main-content" aria-live="polite">
         <div style={styles.loadingCard}>
-          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h1 style={styles.logo}>Fade Boba</h1>
           <p style={styles.loadingText}>Loading manager dashboard…</p>
         </div>
       </main>
@@ -132,7 +132,7 @@ export default function Manager() {
 
       <header style={styles.header}>
         <div>
-          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h1 style={styles.logo}>Fade Boba</h1>
           <p style={styles.subtitle}>Manager overview for {user?.first_name || 'Manager'}</p>
         </div>
 

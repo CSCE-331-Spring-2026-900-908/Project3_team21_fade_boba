@@ -24,7 +24,7 @@ export default function MenuBoard() {
           ← Home
         </button>
         <div>
-          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h1 style={styles.logo}>Fade Boba</h1>
           <p style={styles.tagline}>Premium Bubble Tea</p>
         </div>
         <div style={styles.clock}>
@@ -36,7 +36,7 @@ export default function MenuBoard() {
       <div style={styles.menuGrid}>
         {drinks.map((d) => (
           <div key={d.menu_item_id} style={styles.menuItem}>
-            <span style={styles.itemEmoji}>🧋</span>
+            <span style={styles.itemEmoji}></span>
             <span style={styles.itemName}>{d.item_name}</span>
             <span style={styles.itemPrice}>${parseFloat(d.base_price).toFixed(2)}</span>
           </div>

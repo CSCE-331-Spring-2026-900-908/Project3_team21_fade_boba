@@ -120,7 +120,7 @@ export default function Cashier() {
       {/* Left: Drink grid */}
       <div style={styles.menu}>
         <div style={styles.header}>
-          <span>🧋 Fade Boba — Cashier: {employee?.first_name}</span>
+          <span>Fade Boba — Cashier: {employee?.first_name}</span>
 
           <div style={styles.headerActions}>
             <button style={styles.secondaryButton} onClick={() => navigate('/')}>
@@ -192,7 +192,7 @@ export default function Cashier() {
 
         {receiptData && (
           <button style={{ ...styles.checkoutBtn, background: 'var(--blue)', marginTop: '8px' }} onClick={() => setShowReceiptModal(true)}>
-            📄 View Last Receipt
+            View Last Receipt
           </button>
         )}
       </div>

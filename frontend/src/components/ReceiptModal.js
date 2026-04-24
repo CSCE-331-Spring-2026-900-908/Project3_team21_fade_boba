@@ -16,7 +16,7 @@ export default function ReceiptModal({ order, onClose }) {
     <div style={styles.overlay}>
       <div style={styles.receiptBox}>
         <div style={styles.receiptHeader}>
-          <h2>🧋 Fade Boba</h2>
+          <h2>Fade Boba</h2>
           <p style={styles.dateText}>{order.date || new Date().toLocaleString()}</p>
           <h3>Order #{order.orderId}</h3>
         </div>
@@ -47,7 +47,7 @@ export default function ReceiptModal({ order, onClose }) {
             <div style={styles.successMsg}>✅ Digital Receipt Sent!</div>
           ) : (
             <button style={styles.emailBtn} onClick={handleSendEmail}>
-              📧 Send Digital Receipt (Email)
+              Send Digital Receipt (Email)
             </button>
           )}
           <button style={styles.closeBtn} onClick={onClose}>

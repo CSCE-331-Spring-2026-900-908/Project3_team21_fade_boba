@@ -49,10 +49,10 @@ const DEFAULT_TEXT = {
   addToCart: 'Add to Cart',
   language: 'Language',
   translating: 'Translating menu…',
-  hotSuggestion: 'Hot outside! Cool down with a Strawberry Slush or Taro Slush 🧊',
-  warmSuggestion: 'Nice weather! Try our Brown Sugar Boba or Matcha Latte 🧋',
-  coolSuggestion: 'A little cool — our Thai Milk Tea or Coffee Milk Tea will warm you up ☕',
-  coldSuggestion: 'Cold out there! Our Hot Matcha Latte or Classic Milk Tea is perfect 🍵',
+  hotSuggestion: 'Hot outside! Cool down with a Strawberry Slush or Taro Slush',
+  warmSuggestion: 'Nice weather! Try our Brown Sugar Boba or Matcha Latte',
+  coolSuggestion: 'A little cool — our Thai Milk Tea or Coffee Milk Tea will warm you up',
+  coldSuggestion: 'Cold out there! Our Hot Matcha Latte or Classic Milk Tea is perfect',
   accessibilityHelp:
     'Use the accessibility settings below for higher contrast or larger text. Use Tab to move between controls.',
 };
@@ -409,7 +409,7 @@ export default function CustomerKiosk() {
 
         <div style={styles.confirmBox}>
           <div style={{ fontSize: '4rem' }} aria-hidden="true">
-            🧋
+            
           </div>
           <h1 style={{ fontSize: '2rem', color: 'var(--green)' }}>{uiText.orderPlaced}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Order #{orderId}</p>
@@ -431,7 +431,7 @@ export default function CustomerKiosk() {
             }
             aria-label={uiText.viewReceipt}
           >
-            📄 {uiText.viewReceipt}
+          {uiText.viewReceipt}
           </button>
           <button
             style={{ ...styles.bigBtn, background: 'var(--border)' }}
@@ -460,7 +460,7 @@ export default function CustomerKiosk() {
         </button>
 
         <div>
-          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h1 style={styles.logo}>Fade Boba</h1>
           {isTranslating && (
             <p style={styles.translatingText} aria-live="polite">
               {uiText.translating}
@@ -494,7 +494,7 @@ export default function CustomerKiosk() {
                 setScreen('history');
               }}
             >
-              📜 {uiText.history}
+              {uiText.history}
             </button>
             <button
               style={styles.cartToggle}
@@ -523,7 +523,7 @@ export default function CustomerKiosk() {
         <section style={styles.menuContainer} aria-label="Drink menu">
           {favoriteDrinks.length > 0 && (
             <>
-              <h2 style={styles.sectionTitle}>⭐ {uiText.favorites}</h2>
+              <h2 style={styles.sectionTitle}>{uiText.favorites}</h2>
               <div style={styles.menuGrid}>
                 {favoriteDrinks.map((drink) => (
                   <div key={`favorite-${drink.menu_item_id}`} style={styles.drinkCardWrap}>

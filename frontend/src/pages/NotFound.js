@@ -14,7 +14,7 @@ export default function NotFound() {
           or maybe the link is broken.
         </p>
         <div style={visualStyle}>
-           <span style={bobaEmoji}>🧋</span>
+           <span style={bobaEmoji}></span>
            <div style={puddleStyle}></div>
         </div>
         <button 

@@ -61,7 +61,7 @@ export default function Login() {
     <main style={styles.bg} id="main-content">
       <div style={styles.wrapper}>
         <section style={styles.box} aria-labelledby="login-title">
-          <h1 style={styles.logo}>🧋 Fade Boba</h1>
+          <h1 style={styles.logo}>Fade Boba</h1>
           <h2 id="login-title" style={styles.title}>
             Staff Sign In
           </h2>
