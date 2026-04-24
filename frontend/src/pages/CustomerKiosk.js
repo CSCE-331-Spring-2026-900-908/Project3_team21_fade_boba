@@ -597,7 +597,7 @@ export default function CustomerKiosk() {
                   >
                     {isRec && (
                       <div style={styles.recBadge}>
-                        {getWeatherEmoji(weather?.code)} Weather Pick
+                        Weather Pick
                       </div>
                     )}
                     <img
