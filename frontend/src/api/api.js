@@ -144,3 +144,37 @@ export async function sendChatbotMessage(message, history) {
   if (!res.ok) throw new Error('Chatbot request failed');
   return res.json();
 }
+
+export async function fetchEmployees() {
+  const res = await fetch(`${BASE}/employees`);
+  return res.json();
+}
+ 
+export async function addEmployee(first_name, last_name, role) {
+  const res = await fetch(`${BASE}/employees`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ first_name, last_name, role }),
+  });
+  if (!res.ok) throw new Error('Failed to add employee');
+  return res.json();
+}
+ 
+export async function updateEmployeeRole(employee_id, role) {
+  const res = await fetch(`${BASE}/employees/${employee_id}/role`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) throw new Error('Failed to update role');
+  return res.json();
+}
+ 
+export async function deleteEmployee(employee_id) {
+  const res = await fetch(`${BASE}/employees/${employee_id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete employee');
+  return res.json();
+}
+ 
